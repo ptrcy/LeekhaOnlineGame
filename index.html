@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Likha - Premium Card Game</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Preload critical fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="game-container">
+        <!-- Floating UI / HUD -->
+        <div id="ui-layer">
+            <div id="scoreboard" class="panel hidden">
+                <h3>Scoreboard</h3>
+                <div id="scores-list"></div>
+            </div>
+
+            <div id="game-status" class="status-pill">
+                <span id="status-text">Waiting for players...</span>
+            </div>
+
+            <div id="notification-area"></div>
+
+            <div id="pass-modal" class="modal hidden">
+                <h2>Pass 3 Cards</h2>
+                <p>Select 3 cards to pass to your Left.</p>
+                <button id="confirm-pass-btn" disabled>Pass Cards</button>
+            </div>
+        </div>
+
+        <!-- Game Table -->
+        <div id="table">
+            <div id="center-area">
+                <!-- Played cards go here -->
+                <div id="trick-pile"></div>
+            </div>
+
+            <!-- Player Positions (Fixed for 4 players) -->
+            <!-- Top Player (Bot 2 / Teammate) -->
+            <div class="player-area top" id="player-top">
+                <div class="avatar-container">
+                    <div class="avatar bot"></div>
+                    <div class="player-info">
+                        <span class="name">Partner (Bot)</span>
+                        <div class="hand-summary" data-player-index="2">0 pts</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Left Player (Bot 1) -->
+            <div class="player-area left" id="player-left">
+                <div class="avatar-container">
+                    <div class="avatar bot"></div>
+                    <div class="player-info">
+                        <span class="name">West (Bot)</span>
+                        <div class="hand-summary" data-player-index="3">0 pts</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Player (Bot 3) -->
+            <div class="player-area right" id="player-right">
+                <div class="avatar-container">
+                    <div class="avatar bot"></div>
+                    <div class="player-info">
+                        <span class="name">East (Bot)</span>
+                        <div class="hand-summary" data-player-index="1">0 pts</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Player (Human) -->
+            <div class="player-area bottom" id="player-bottom">
+                <div id="human-hand" class="hand-container">
+                    <!-- Cards will be injected here -->
+                </div>
+                <div class="player-info self">
+                    <span class="name">You</span>
+                    <div class="hand-summary" data-player-index="0">0 pts</div>
+                    <span id="test-controls">
+                        <!-- Dev controls -->
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <div id="modal-overlay" class="hidden">
+            <div id="game-over-modal" class="modal hidden">
+                <h2>Game Over</h2>
+                <div id="final-results"></div>
+                <button id="restart-btn">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Handling Script -->
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            const status = document.getElementById('status-text');
+            if (status) {
+                status.textContent = "Error: " + msg;
+                status.style.color = 'red';
+            }
+            // Also create a visual overlay for detailed error if possible
+            const errDiv = document.createElement('div');
+            errDiv.style.position = 'fixed';
+            errDiv.style.top = '0';
+            errDiv.style.left = '0';
+            errDiv.style.width = '100%';
+            errDiv.style.background = 'rgba(100,0,0,0.9)';
+            errDiv.style.color = 'white';
+            errDiv.style.padding = '20px';
+            errDiv.style.zIndex = '99999';
+            errDiv.textContent = `Error: ${msg}\nIn ${url}:${line}:${col}`;
+            document.body.appendChild(errDiv);
+            return false;
+        };
+        // Catch promise rejections too
+        window.onunhandledrejection = function (event) {
+            const status = document.getElementById('status-text');
+            if (status) {
+                status.textContent = "Error: " + event.reason;
+                status.style.color = 'red';
+            }
+        };
+    </script>
+
+    <!-- Scripts -->
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Leekha Debugger</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { padding: 20px; font-family: 'Inter', sans-serif; background-color: #1a1a1a; color: white; }
+        .container { max-width: 800px; margin: auto; }
+        #output { white-space: pre-wrap; font-family: monospace; background: #333; padding: 15px; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Leekha Round Debugger</h1>
+        <p>Load a saved game state JSON file to analyze it.</p>
+        <input type="file" id="file-input" accept=".json">
+        <button id="replay-btn">Replay Last Trick</button>
+        <div id="output">
+            <p>Load a file and click replay.</p>
+        </div>
+    </div>
+    <script type="module" src="debugger.js"></script>
+</body>
+</html>

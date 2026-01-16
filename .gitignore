@@ -1,0 +1,6 @@
+node_modules/
+*.log
+.DS_Store
+tmpclaude-*
+leekha-round-state-*.json
+.claude/

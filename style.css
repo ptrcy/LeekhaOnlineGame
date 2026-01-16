@@ -1,0 +1,906 @@
+:root {
+    /* Colors */
+    --table-color: #2e5a38;
+    --table-color-dark: #1a3c22;
+    --accent-gold: #d4af37;
+    --accent-gold-light: #f3e5b5;
+    --text-light: #ffffff;
+    --text-dim: #rgba(255, 255, 255, 0.7);
+    --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.5);
+
+    /* Dimensions - Base (for trick pile) */
+    --card-width: 90px;
+    --card-height: 126px;
+    --card-radius: 8px;
+    --card-overlap: -50px;
+
+    /* Hand cards (can be different from trick cards) */
+    --hand-card-width: 90px;
+    --hand-card-height: 126px;
+    --hand-card-overlap: -50px;
+
+    /* Z-Indices */
+    --z-table: 0;
+    --z-card: 10;
+    --z-ui: 100;
+    --z-modal: 1000;
+}
+
+/* Tablet Adjustments */
+@media (max-width: 1024px) {
+    :root {
+        /* Trick cards */
+        --card-width: 70px;
+        --card-height: 98px;
+
+        /* Hand cards - bigger */
+        --hand-card-width: 80px;
+        --hand-card-height: 112px;
+        --hand-card-overlap: -48px;
+    }
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    :root {
+        /* Trick cards - smaller for center */
+        --card-width: 60px;
+        --card-height: 84px;
+
+        /* Hand cards - much bigger for interaction */
+        --hand-card-width: 75px;
+        --hand-card-height: 105px;
+        --hand-card-overlap: -45px;
+    }
+}
+
+/* Small Mobile Adjustments */
+@media (max-width: 480px) {
+    :root {
+        /* Trick cards - compact */
+        --card-width: 50px;
+        --card-height: 70px;
+        --card-radius: 6px;
+
+        /* Hand cards - still good size for tapping */
+        --hand-card-width: 68px;
+        --hand-card-height: 95px;
+        --hand-card-overlap: -42px;
+    }
+}
+
+/* Very Small Mobile (iPhone SE, etc) */
+@media (max-width: 375px) {
+    :root {
+        /* Trick cards - very compact */
+        --card-width: 45px;
+        --card-height: 63px;
+
+        /* Hand cards - still usable */
+        --hand-card-width: 62px;
+        --hand-card-height: 87px;
+        --hand-card-overlap: -40px;
+    }
+}
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+    /* Prevent selection */
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-light);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.card-back {
+    background: url('./assets/card_back.png') center/cover no-repeat;
+    border: 1px solid #aaa;
+}
+
+#game-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* UI Layer */
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    /* Let clicks pass through to game */
+    z-index: var(--z-ui);
+}
+
+.status-pill {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    padding: 8px 20px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 14px;
+    font-weight: 500;
+    pointer-events: auto;
+    max-width: 80%;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+    .status-pill {
+        top: 10px;
+        font-size: 12px;
+        padding: 6px 16px;
+        max-width: 85%;
+    }
+}
+
+@media (max-width: 480px) {
+    .status-pill {
+        top: 5px;
+        font-size: 11px;
+        padding: 5px 12px;
+        max-width: 90%;
+    }
+}
+
+#scoreboard {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--accent-gold);
+    pointer-events: auto;
+    max-width: 200px;
+}
+
+#scoreboard h3 {
+    margin: 0 0 10px 0;
+    font-family: 'Cinzel', serif;
+    color: var(--accent-gold);
+    font-size: 16px;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    #scoreboard {
+        top: 10px;
+        right: 10px;
+        padding: 10px;
+        max-width: 160px;
+    }
+
+    #scoreboard h3 {
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    #scores-list {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    #scoreboard {
+        top: 5px;
+        right: 5px;
+        padding: 8px;
+        max-width: 140px;
+    }
+
+    #scoreboard h3 {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    #scores-list {
+        font-size: 10px;
+    }
+}
+
+/* Table Layout */
+#table {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: var(--z-table);
+}
+
+/* Center Play Area */
+#center-area {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(250px, 40vw);
+    height: min(250px, 40vw);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#trick-pile {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#trick-pile .card {
+    flex-shrink: 0;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
+    transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out;
+}
+
+#trick-pile .card.collecting {
+    opacity: 0;
+}
+
+@media (max-width: 768px) {
+    #center-area {
+        width: min(200px, 35vw);
+        height: min(200px, 35vw);
+    }
+}
+
+@media (max-width: 480px) {
+    #center-area {
+        width: min(160px, 32vw);
+        height: min(160px, 32vw);
+    }
+}
+
+/* Player Areas */
+.player-area {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Positioning */
+.top {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.bottom {
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+}
+
+.left {
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.right {
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+@media (max-width: 768px) {
+    .top {
+        top: 10px;
+    }
+
+    .bottom {
+        bottom: 25px;
+    }
+
+    .left {
+        left: 5px;
+    }
+
+    .right {
+        right: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .top {
+        top: 5px;
+    }
+
+    .bottom {
+        bottom: 20px;
+    }
+
+    .left {
+        left: 2px;
+    }
+
+    .right {
+        right: 2px;
+    }
+
+    .avatar {
+        width: 35px !important;
+        height: 35px !important;
+    }
+
+    .player-info .name {
+        font-size: 10px !important;
+    }
+}
+
+/* Very small screens need even more space */
+@media (max-width: 375px) {
+    .bottom {
+        bottom: 15px;
+    }
+}
+
+/* iOS safe area support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .bottom {
+        bottom: calc(30px + env(safe-area-inset-bottom));
+    }
+
+    @media (max-width: 768px) {
+        .bottom {
+            bottom: calc(25px + env(safe-area-inset-bottom));
+        }
+    }
+
+    @media (max-width: 480px) {
+        .bottom {
+            bottom: calc(20px + env(safe-area-inset-bottom));
+        }
+    }
+
+    @media (max-width: 375px) {
+        .bottom {
+            bottom: calc(15px + env(safe-area-inset-bottom));
+        }
+    }
+}
+
+.avatar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0.8;
+}
+
+.avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #444;
+    border: 2px solid var(--accent-gold);
+    margin-bottom: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.player-info .name {
+    font-size: 12px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Human Hand */
+#human-hand {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    flex-wrap: nowrap;
+    height: calc(var(--hand-card-height) + 40px);
+    width: 95%;
+    max-width: 900px;
+    perspective: 1000px;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 0 10px 10px 10px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    min-height: calc(var(--hand-card-height) + 40px);
+}
+
+/* Hand cards use larger size */
+#human-hand .card {
+    width: var(--hand-card-width);
+    height: var(--hand-card-height);
+    min-width: var(--hand-card-width);
+    margin-right: var(--hand-card-overlap);
+}
+
+#human-hand::-webkit-scrollbar {
+    height: 4px;
+}
+
+#human-hand::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+#human-hand::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.5);
+    border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+    #human-hand {
+        width: 98%;
+        padding: 0 5px 8px 5px;
+        height: calc(var(--hand-card-height) + 35px);
+        min-height: calc(var(--hand-card-height) + 35px);
+    }
+}
+
+@media (max-width: 480px) {
+    #human-hand {
+        width: 100%;
+        padding: 0 3px 6px 3px;
+        height: calc(var(--hand-card-height) + 30px);
+        min-height: calc(var(--hand-card-height) + 30px);
+    }
+}
+
+@media (max-width: 375px) {
+    #human-hand {
+        padding: 0 2px 5px 2px;
+        height: calc(var(--hand-card-height) + 28px);
+        min-height: calc(var(--hand-card-height) + 28px);
+    }
+}
+
+.card {
+    width: var(--card-width);
+    height: var(--card-height);
+    min-width: var(--card-width);
+    flex-shrink: 0;
+    background: linear-gradient(145deg, #ffffff, #f5f5f5);
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    border: 2px solid #e0e0e0;
+    position: relative;
+    margin-right: var(--card-overlap);
+    transition: transform 0.2s ease, margin 0.2s ease, box-shadow 0.2s ease, z-index 0s 0.2s;
+    cursor: pointer;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 6px;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+}
+
+.card:last-child {
+    margin-right: 0;
+}
+
+.card:hover {
+    transform: translateY(-20px) scale(1.05);
+    box-shadow: var(--card-shadow-hover);
+    z-index: 100 !important;
+    transition: transform 0.2s ease, margin 0.2s ease, box-shadow 0.2s ease, z-index 0s;
+}
+
+.card.selected {
+    transform: translateY(-30px);
+    border: 3px solid var(--accent-gold);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.3), var(--card-shadow-hover);
+}
+
+.card.disabled {
+    filter: brightness(0.5) saturate(0.3);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.card.disabled:hover {
+    transform: none;
+    box-shadow: var(--card-shadow);
+}
+
+.card.red {
+    color: #e31b23;
+}
+
+.card.black {
+    color: #2c2c2c;
+}
+
+.card-corner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    font-size: calc(var(--card-width) * 0.22);
+}
+
+.card-corner.top-left {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+}
+
+.card-corner.bottom-right {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
+    transform: rotate(180deg);
+}
+
+.card-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: calc(var(--card-width) * 0.6);
+    line-height: 1;
+    opacity: 0.9;
+}
+
+/* Hand cards use larger font sizes */
+#human-hand .card .card-corner {
+    font-size: calc(var(--hand-card-width) * 0.22);
+}
+
+#human-hand .card .card-center {
+    font-size: calc(var(--hand-card-width) * 0.6);
+}
+
+.card-rank {
+    font-weight: bold;
+    line-height: 0.9;
+}
+
+.card-suit {
+    font-size: 0.85em;
+    line-height: 0.9;
+}
+
+@media (max-width: 768px) {
+    .card {
+        padding: 4px;
+    }
+
+    .card:hover {
+        transform: translateY(-12px) scale(1.03);
+    }
+
+    .card.selected {
+        transform: translateY(-15px);
+    }
+
+    #human-hand .card {
+        padding: 5px;
+    }
+
+    #human-hand .card:hover {
+        transform: translateY(-12px) scale(1.03);
+    }
+
+    #human-hand .card.selected {
+        transform: translateY(-15px);
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        padding: 3px;
+    }
+
+    .card:hover {
+        transform: translateY(-10px) scale(1.02);
+    }
+
+    .card.selected {
+        transform: translateY(-12px);
+    }
+
+    .card-corner.top-left {
+        top: 2px;
+        left: 3px;
+    }
+
+    .card-corner.bottom-right {
+        bottom: 2px;
+        right: 3px;
+    }
+
+    #human-hand .card {
+        padding: 4px;
+    }
+
+    #human-hand .card:hover {
+        transform: translateY(-10px) scale(1.02);
+    }
+
+    #human-hand .card.selected {
+        transform: translateY(-12px);
+    }
+
+    #human-hand .card .card-corner.top-left {
+        top: 3px;
+        left: 4px;
+    }
+
+    #human-hand .card .card-corner.bottom-right {
+        bottom: 3px;
+        right: 4px;
+    }
+}
+
+@media (max-width: 375px) {
+    .card {
+        padding: 2px;
+    }
+
+    .card-corner.top-left {
+        top: 2px;
+        left: 2px;
+    }
+
+    .card-corner.bottom-right {
+        bottom: 2px;
+        right: 2px;
+    }
+
+    #human-hand .card {
+        padding: 3px;
+    }
+
+    #human-hand .card .card-corner.top-left {
+        top: 2px;
+        left: 3px;
+    }
+
+    #human-hand .card .card-corner.bottom-right {
+        bottom: 2px;
+        right: 3px;
+    }
+}
+
+/* Modals */
+.modal {
+    background: #1a1a1a;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--accent-gold);
+    text-align: center;
+    pointer-events: auto;
+}
+
+#pass-modal {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 400px;
+}
+
+@media (max-width: 768px) {
+    .modal {
+        padding: 20px;
+        border-radius: 10px;
+    }
+
+    .modal h2 {
+        font-size: 20px;
+    }
+
+    .modal p {
+        font-size: 14px;
+    }
+
+    #pass-modal {
+        width: 92%;
+        max-width: 350px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal {
+        padding: 16px;
+        border-radius: 8px;
+    }
+
+    .modal h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .modal p {
+        font-size: 13px;
+    }
+
+    #pass-modal {
+        width: 95%;
+        max-width: 320px;
+        top: 35%;
+    }
+}
+
+#modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: var(--z-modal);
+    backdrop-filter: blur(3px);
+}
+
+button {
+    background: linear-gradient(to bottom, var(--accent-gold), #b89628);
+    border: none;
+    color: #1a1a1a;
+    padding: 10px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    margin-top: 15px;
+    transition: filter 0.2s;
+    min-height: 44px;
+}
+
+button:hover {
+    filter: brightness(1.1);
+}
+
+button:disabled {
+    filter: grayscale(0.8);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+    button {
+        font-size: 14px;
+        padding: 8px 20px;
+        margin-top: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    button {
+        font-size: 13px;
+        padding: 8px 16px;
+        margin-top: 10px;
+        width: 100%;
+    }
+}
+
+/* Landscape mode optimizations for mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+    :root {
+        /* Trick cards - compact for center */
+        --card-width: 48px;
+        --card-height: 67px;
+
+        /* Hand cards - bigger for touch */
+        --hand-card-width: 62px;
+        --hand-card-height: 87px;
+        --hand-card-overlap: -38px;
+    }
+
+    .top {
+        top: 5px;
+    }
+
+    .bottom {
+        bottom: 15px;
+    }
+
+    #human-hand {
+        height: calc(var(--hand-card-height) + 25px);
+        min-height: calc(var(--hand-card-height) + 25px);
+        padding: 0 5px 5px 5px;
+    }
+
+    .avatar {
+        width: 30px !important;
+        height: 30px !important;
+    }
+
+    .player-info .name {
+        font-size: 9px !important;
+    }
+
+    .status-pill {
+        top: 3px;
+        font-size: 10px;
+        padding: 4px 10px;
+    }
+
+    #scoreboard {
+        top: 3px;
+        right: 3px;
+        padding: 6px;
+        max-width: 120px;
+    }
+
+    #scoreboard h3 {
+        font-size: 11px;
+    }
+
+    #scores-list {
+        font-size: 9px;
+    }
+
+    #center-area {
+        width: min(150px, 26vw);
+        height: min(150px, 26vw);
+    }
+
+    #human-hand .card:hover {
+        transform: translateY(-8px) scale(1.02);
+    }
+
+    #human-hand .card.selected {
+        transform: translateY(-10px);
+    }
+}
+
+/* Better visibility for bottom player info */
+.player-area.bottom .player-info {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 5px 15px;
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+}
+
+@media (max-width: 480px) {
+    .player-area.bottom .player-info {
+        padding: 3px 10px;
+        gap: 6px;
+    }
+}
+
+.hidden {
+    display: none !important;
+}
