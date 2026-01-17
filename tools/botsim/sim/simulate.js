@@ -1,6 +1,6 @@
-import { GameState } from './js/game-state.js';
-import { BotPlayer } from './js/player.js';
-import { GameEventEmitter } from './js/events.js';
+import { GameState } from '../../js/game-state.js';
+import { BotPlayer } from '../../js/player.js';
+import { GameEventEmitter } from '../../js/events.js';
 
 const args = process.argv.slice(2);
 const simGames = parseInt(args[0]) || 100;
@@ -44,3 +44,4 @@ try {
 } catch (error) {
     console.error("Simulation failed to start:", error);
 }
+

@@ -16,6 +16,7 @@
 </head>
 
 <body>
+    <a href="#human-hand" class="skip-link">Skip to your cards</a>
     <div id="game-container">
         <!-- Floating UI / HUD -->
         <div id="ui-layer">
@@ -24,16 +25,19 @@
                 <div id="scores-list"></div>
             </div>
 
-            <div id="game-status" class="status-pill">
+            <div id="game-status" class="status-pill" role="status" aria-live="polite" aria-atomic="true">
+                <span id="ai-thinking-indicator" class="hidden" aria-label="AI is thinking">
+                    <span class="spinner"></span>
+                </span>
                 <span id="status-text">Waiting for players...</span>
             </div>
 
-            <div id="notification-area"></div>
+            <div id="notification-area" role="log" aria-live="polite" aria-label="Game notifications"></div>
 
-            <div id="pass-modal" class="modal hidden">
-                <h2>Pass 3 Cards</h2>
-                <p>Select 3 cards to pass to your Left.</p>
-                <button id="confirm-pass-btn" disabled>Pass Cards</button>
+            <div id="pass-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pass-modal-title">
+                <h2 id="pass-modal-title">Pass 3 Cards</h2>
+                <p id="pass-modal-desc">Select 3 cards to pass to your Left.</p>
+                <button id="confirm-pass-btn" disabled aria-describedby="pass-modal-desc">Pass Cards</button>
             </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { LeekhaHeuristicBot } from './LeekhaHeuristicBot.js';
+import { LeekhaHeuristicBot } from './botsim/bots/LeekhaHeuristicBot.js';
 import { Card, SUITS, RANKS } from './js/card.js';
 import { CardTracker } from './js/card-tracker.js';
 import { BotAdapter } from './js/bot-adapter.js';
@@ -115,3 +115,4 @@ function replayLastTrick(state) {
         console.error(error);
     }
 }
+

@@ -1,4 +1,5 @@
 import { GameEvents } from './events.js';
+import { TIMING } from './constants.js';
 
 /**
  * Abstract base class for handling user input
@@ -25,14 +26,28 @@ export class InputController {
 }
 
 /**
+ * Selection states for the input controller state machine
+ * @enum {string}
+ */
+const SelectionState = {
+  IDLE: 'idle',
+  PLAY_PENDING: 'play_pending',
+  PASS_PENDING: 'pass_pending'
+};
+
+/**
  * DOM-based input controller for browser UI
+ * Uses a state machine pattern to prevent race conditions
  */
 export class DOMInputController extends InputController {
   constructor(eventEmitter) {
     super();
     this.events = eventEmitter;
+    this.state = SelectionState.IDLE;
     this.pendingPlayResolve = null;
+    this.pendingPlayReject = null;
     this.pendingPassResolve = null;
+    this.pendingPassReject = null;
     this.validMoves = null;
     this.timeout = null;
   }
@@ -42,14 +57,17 @@ export class DOMInputController extends InputController {
    * @param {Card[]} hand - Player's hand
    * @param {Card[]} validMoves - Valid cards to play
    * @returns {Promise<Card>} Selected card
+   * @throws {Error} If a selection is already in progress
    */
   async getCardSelection(hand, validMoves) {
-    // Clean up any previous pending selection
-    if (this.pendingPlayResolve) {
-      this.cancelSelection('New selection started');
+    // State machine guard: prevent concurrent selections
+    if (this.state !== SelectionState.IDLE) {
+      throw new Error(`Cannot start card selection: already in state '${this.state}'`);
     }
 
     return new Promise((resolve, reject) => {
+      // Transition to play pending state
+      this.state = SelectionState.PLAY_PENDING;
       this.pendingPlayResolve = resolve;
       this.pendingPlayReject = reject;
       this.validMoves = validMoves;
@@ -64,7 +82,7 @@ export class DOMInputController extends InputController {
       // Set timeout (60 seconds)
       this.timeout = setTimeout(() => {
         this.cancelSelection('Selection timeout (60s)');
-      }, 60000);
+      }, TIMING.SELECTION_TIMEOUT);
     });
   }
 
@@ -72,14 +90,17 @@ export class DOMInputController extends InputController {
    * Get pass selection from DOM click events
    * @param {Card[]} hand - Player's hand
    * @returns {Promise<Card[]>} Array of 3 selected cards
+   * @throws {Error} If a selection is already in progress
    */
   async getPassSelection(hand) {
-    // Clean up any previous pending selection
-    if (this.pendingPassResolve) {
-      this.cancelPassSelection('New selection started');
+    // State machine guard: prevent concurrent selections
+    if (this.state !== SelectionState.IDLE) {
+      throw new Error(`Cannot start pass selection: already in state '${this.state}'`);
     }
 
     return new Promise((resolve, reject) => {
+      // Transition to pass pending state
+      this.state = SelectionState.PASS_PENDING;
       this.pendingPassResolve = resolve;
       this.pendingPassReject = reject;
 
@@ -94,7 +115,7 @@ export class DOMInputController extends InputController {
       // Set timeout (60 seconds)
       this.timeout = setTimeout(() => {
         this.cancelPassSelection('Selection timeout (60s)');
-      }, 60000);
+      }, TIMING.SELECTION_TIMEOUT);
     });
   }
 
@@ -103,7 +124,10 @@ export class DOMInputController extends InputController {
    * @param {Card} card - Clicked card
    */
   handleCardClick(card) {
-    if (!this.pendingPlayResolve) return;
+    // State machine guard: only handle clicks in play pending state
+    if (this.state !== SelectionState.PLAY_PENDING || !this.pendingPlayResolve) {
+      return;
+    }
 
     // Validate the card is in validMoves
     const isValid = this.validMoves.some(
@@ -113,6 +137,9 @@ export class DOMInputController extends InputController {
     if (isValid) {
       clearTimeout(this.timeout);
       const resolve = this.pendingPlayResolve;
+
+      // Reset state to IDLE before resolving
+      this.state = SelectionState.IDLE;
       this.pendingPlayResolve = null;
       this.pendingPlayReject = null;
       this.validMoves = null;
@@ -135,7 +162,10 @@ export class DOMInputController extends InputController {
    * @param {Card[]} selectedCards - Array of selected cards (should be 3)
    */
   handlePassConfirm(selectedCards) {
-    if (!this.pendingPassResolve) return;
+    // State machine guard: only handle confirmation in pass pending state
+    if (this.state !== SelectionState.PASS_PENDING || !this.pendingPassResolve) {
+      return;
+    }
 
     if (selectedCards.length !== 3) {
       this.events.emit(GameEvents.INVALID_MOVE, {
@@ -146,6 +176,9 @@ export class DOMInputController extends InputController {
 
     clearTimeout(this.timeout);
     const resolve = this.pendingPassResolve;
+
+    // Reset state to IDLE before resolving
+    this.state = SelectionState.IDLE;
     this.pendingPassResolve = null;
     this.pendingPassReject = null;
     this.timeout = null;
@@ -161,9 +194,12 @@ export class DOMInputController extends InputController {
    * @param {string} reason - Cancellation reason
    */
   cancelSelection(reason) {
-    if (this.pendingPlayResolve) {
+    if (this.state === SelectionState.PLAY_PENDING && this.pendingPlayReject) {
       clearTimeout(this.timeout);
       const reject = this.pendingPlayReject;
+
+      // Reset state to IDLE
+      this.state = SelectionState.IDLE;
       this.pendingPlayResolve = null;
       this.pendingPlayReject = null;
       this.validMoves = null;
@@ -179,9 +215,12 @@ export class DOMInputController extends InputController {
    * @param {string} reason - Cancellation reason
    */
   cancelPassSelection(reason) {
-    if (this.pendingPassResolve) {
+    if (this.state === SelectionState.PASS_PENDING && this.pendingPassReject) {
       clearTimeout(this.timeout);
       const reject = this.pendingPassReject;
+
+      // Reset state to IDLE
+      this.state = SelectionState.IDLE;
       this.pendingPassResolve = null;
       this.pendingPassReject = null;
       this.timeout = null;
@@ -196,7 +235,15 @@ export class DOMInputController extends InputController {
    * @returns {boolean}
    */
   hasPendingSelection() {
-    return this.pendingPlayResolve !== null || this.pendingPassResolve !== null;
+    return this.state !== SelectionState.IDLE;
+  }
+
+  /**
+   * Get the current selection state
+   * @returns {string}
+   */
+  getState() {
+    return this.state;
   }
 }
 

@@ -1,0 +1,8 @@
+{
+  "name": "leekha-botsim",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "simulate": "node sim/simulate.js"
+  }
+}

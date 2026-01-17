@@ -1,4 +1,10 @@
 import { GameEvents } from './events.js';
+import {
+    TIMING,
+    PLAYER_ELEMENT_IDS,
+    CARD_DISPLAY,
+    SUIT_NAMES
+} from './constants.js';
 
 /**
  * Abstract base class defining the renderer contract
@@ -58,13 +64,25 @@ export class DOMRenderer extends GameRenderer {
       gameOverModal: null,
       modalOverlay: null,
       finalResults: null,
-      restartBtn: null
+      restartBtn: null,
+      aiThinkingIndicator: null,
+      notificationArea: null
     };
 
     // State for rendering
     this.currentHand = null;
     this.selectionMode = null;
     this.selectedCards = new Set();
+
+    // Memoization for hand rendering
+    this.lastRenderedHandKey = null;
+
+    // Keyboard navigation state
+    this.focusedCardIndex = -1;
+    this.validCardIndices = [];
+
+    // Bind keyboard handler
+    this.handleKeyDown = this.handleKeyDown.bind(this);
   }
 
   /**
@@ -83,6 +101,8 @@ export class DOMRenderer extends GameRenderer {
     this.elements.modalOverlay = document.getElementById('modal-overlay');
     this.elements.finalResults = document.getElementById('final-results');
     this.elements.restartBtn = document.getElementById('restart-btn');
+    this.elements.aiThinkingIndicator = document.getElementById('ai-thinking-indicator');
+    this.elements.notificationArea = document.getElementById('notification-area');
 
     // Subscribe to game events
     this.subscribeToEvents();
@@ -96,6 +116,161 @@ export class DOMRenderer extends GameRenderer {
 
       this.inputController.handlePassConfirm(selectedCardObjects);
     };
+
+    // Setup keyboard navigation
+    document.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  /**
+   * Handle keyboard navigation for card selection
+   * @param {KeyboardEvent} event - Keyboard event
+   */
+  handleKeyDown(event) {
+    // Only handle keys when in selection mode
+    if (!this.selectionMode) return;
+
+    const key = event.key;
+
+    switch (key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        event.preventDefault();
+        this.focusNextCard();
+        break;
+
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        event.preventDefault();
+        this.focusPreviousCard();
+        break;
+
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        this.selectFocusedCard();
+        break;
+
+      case 'Escape':
+        event.preventDefault();
+        this.clearFocus();
+        break;
+
+      case 'Home':
+        event.preventDefault();
+        this.focusFirstCard();
+        break;
+
+      case 'End':
+        event.preventDefault();
+        this.focusLastCard();
+        break;
+    }
+  }
+
+  /**
+   * Focus the next valid card
+   */
+  focusNextCard() {
+    if (this.validCardIndices.length === 0) return;
+
+    const currentPos = this.validCardIndices.indexOf(this.focusedCardIndex);
+    const nextPos = currentPos < 0 ? 0 : (currentPos + 1) % this.validCardIndices.length;
+    this.setFocusedCard(this.validCardIndices[nextPos]);
+  }
+
+  /**
+   * Focus the previous valid card
+   */
+  focusPreviousCard() {
+    if (this.validCardIndices.length === 0) return;
+
+    const currentPos = this.validCardIndices.indexOf(this.focusedCardIndex);
+    const prevPos = currentPos <= 0 ? this.validCardIndices.length - 1 : currentPos - 1;
+    this.setFocusedCard(this.validCardIndices[prevPos]);
+  }
+
+  /**
+   * Focus the first valid card
+   */
+  focusFirstCard() {
+    if (this.validCardIndices.length === 0) return;
+    this.setFocusedCard(this.validCardIndices[0]);
+  }
+
+  /**
+   * Focus the last valid card
+   */
+  focusLastCard() {
+    if (this.validCardIndices.length === 0) return;
+    this.setFocusedCard(this.validCardIndices[this.validCardIndices.length - 1]);
+  }
+
+  /**
+   * Set focus on a specific card by index
+   * @param {number} index - Card index
+   */
+  setFocusedCard(index) {
+    const container = this.elements.humanHand;
+    const cards = container.querySelectorAll('.card');
+
+    // Remove focus from previous card
+    cards.forEach(card => card.classList.remove('keyboard-focus'));
+
+    // Set focus on new card
+    this.focusedCardIndex = index;
+    const card = cards[index];
+    if (card) {
+      card.classList.add('keyboard-focus');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }
+
+  /**
+   * Clear keyboard focus
+   */
+  clearFocus() {
+    const container = this.elements.humanHand;
+    const cards = container.querySelectorAll('.card');
+    cards.forEach(card => card.classList.remove('keyboard-focus'));
+    this.focusedCardIndex = -1;
+  }
+
+  /**
+   * Select or toggle the currently focused card
+   */
+  selectFocusedCard() {
+    if (this.focusedCardIndex < 0 || !this.currentHand) return;
+
+    const card = this.currentHand[this.focusedCardIndex];
+    if (!card) return;
+
+    const container = this.elements.humanHand;
+    const cardElement = container.querySelector(`[data-index="${this.focusedCardIndex}"]`);
+
+    if (!cardElement || cardElement.classList.contains('disabled')) return;
+
+    if (this.selectionMode === 'pass') {
+      // Multi-selection for passing
+      const cardKey = `${card.suit}${card.rank}`;
+
+      if (this.selectedCards.has(cardKey)) {
+        this.selectedCards.delete(cardKey);
+        cardElement.classList.remove('selected');
+        cardElement.setAttribute('aria-selected', 'false');
+      } else {
+        if (this.selectedCards.size < 3) {
+          this.selectedCards.add(cardKey);
+          cardElement.classList.add('selected');
+          cardElement.setAttribute('aria-selected', 'true');
+        }
+      }
+
+      // Update button state
+      this.elements.confirmPassBtn.disabled = (this.selectedCards.size !== 3);
+    } else if (this.selectionMode === 'play') {
+      // Single selection for playing
+      this.inputController.handleCardClick(card);
+    }
   }
 
   /**
@@ -116,10 +291,14 @@ export class DOMRenderer extends GameRenderer {
 
     this.events.on(GameEvents.CARD_PLAYED, (data) => {
       this.renderTrickCard(data.card, data.playerIndex, data.position);
+      // Hide AI thinking indicator when any card is played
+      this.showAIThinking(false);
     });
 
     this.events.on(GameEvents.TRICK_COMPLETE, (data) => {
       this.animateTrickCollection(data.winnerIndex);
+      // Clear active turn indicator when trick completes
+      this.clearActiveTurn();
     });
 
     this.events.on(GameEvents.TRICK_PILE_CLEAR, () => {
@@ -132,6 +311,7 @@ export class DOMRenderer extends GameRenderer {
 
     this.events.on(GameEvents.GAME_OVER, (data) => {
       this.showGameOver(data);
+      this.clearActiveTurn();
     });
 
     this.events.on(GameEvents.ENABLE_CARD_SELECTION, (data) => {
@@ -149,6 +329,92 @@ export class DOMRenderer extends GameRenderer {
     this.events.on(GameEvents.PASS_PHASE_COMPLETE, () => {
       this.showPassModal(false, false);
     });
+
+    this.events.on(GameEvents.TURN_CHANGED, (data) => {
+      this.setActiveTurn(data.playerIndex);
+      // Show AI thinking indicator for bot players (not player 0)
+      if (data.playerIndex !== 0) {
+        this.showAIThinking(true);
+      } else {
+        this.showAIThinking(false);
+      }
+    });
+
+    this.events.on(GameEvents.INVALID_MOVE, (data) => {
+      const message = data.reason || 'Invalid move';
+      this.showNotification(message, 'error', TIMING.NOTIFICATION_DEFAULT);
+    });
+
+    this.events.on(GameEvents.ERROR_OCCURRED, (data) => {
+      const message = data.message || 'An error occurred';
+      this.showNotification(message, 'error', TIMING.NOTIFICATION_ERROR || 5000);
+      console.error('Game error:', data);
+    });
+  }
+
+  /**
+   * Set the active turn indicator on a player
+   * @param {number} playerIndex - Index of the active player (0-3)
+   */
+  setActiveTurn(playerIndex) {
+    // Clear all active indicators
+    this.clearActiveTurn();
+
+    const elementId = PLAYER_ELEMENT_IDS[playerIndex];
+    const playerElement = document.getElementById(elementId);
+
+    if (playerElement) {
+      playerElement.classList.add('active-turn');
+    }
+  }
+
+  /**
+   * Clear all active turn indicators
+   */
+  clearActiveTurn() {
+    const playerAreas = document.querySelectorAll('.player-area');
+    playerAreas.forEach(area => area.classList.remove('active-turn'));
+  }
+
+  /**
+   * Show or hide the AI thinking indicator
+   * @param {boolean} show - Whether to show the indicator
+   */
+  showAIThinking(show) {
+    if (this.elements.aiThinkingIndicator) {
+      if (show) {
+        this.elements.aiThinkingIndicator.classList.remove('hidden');
+      } else {
+        this.elements.aiThinkingIndicator.classList.add('hidden');
+      }
+    }
+  }
+
+  /**
+   * Show a notification toast message
+   * @param {string} message - The message to display
+   * @param {string} type - Type of notification: 'error', 'success', 'info' (default: 'info')
+   * @param {number} duration - How long to show the notification in ms (default: TIMING.NOTIFICATION_DEFAULT)
+   */
+  showNotification(message, type = 'info', duration = TIMING.NOTIFICATION_DEFAULT) {
+    if (!this.elements.notificationArea) return;
+
+    const toast = document.createElement('div');
+    toast.className = `notification-toast ${type}`;
+    toast.textContent = message;
+    toast.setAttribute('role', 'alert');
+
+    this.elements.notificationArea.appendChild(toast);
+
+    // Auto-remove after duration
+    setTimeout(() => {
+      toast.classList.add('fade-out');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, TIMING.NOTIFICATION_FADE);
+    }, duration);
   }
 
   /**
@@ -239,13 +505,32 @@ export class DOMRenderer extends GameRenderer {
   }
 
   /**
-   * Render all players' hands
+   * Generate a unique key for a hand to use for memoization
+   * @param {Card[]} hand - Array of cards
+   * @returns {string} Unique key representing the hand state
+   */
+  generateHandKey(hand) {
+    if (!hand || hand.length === 0) return '';
+    return hand.map(card => `${card.suit}${card.rank}`).join(',');
+  }
+
+  /**
+   * Render all players' hands with memoization to avoid unnecessary re-renders
    * @param {Array} hands - Array of hands for each player
    * @param {Object} options - Rendering options
+   * @param {boolean} options.force - Force re-render even if hand unchanged
    */
   renderHands(hands, options = {}) {
     const humanHand = hands[0];
+    const handKey = this.generateHandKey(humanHand);
+
+    // Skip re-render if hand hasn't changed (memoization)
+    if (!options.force && handKey === this.lastRenderedHandKey && !this.selectionMode) {
+      return;
+    }
+
     this.currentHand = humanHand;
+    this.lastRenderedHandKey = handKey;
 
     const container = this.elements.humanHand;
     container.innerHTML = '';
@@ -270,6 +555,20 @@ export class DOMRenderer extends GameRenderer {
     this.selectionMode = mode;
     this.selectedCards.clear();
 
+    // Reset keyboard navigation state
+    this.focusedCardIndex = -1;
+    this.validCardIndices = [];
+
+    // Build list of valid card indices for keyboard navigation
+    hand.forEach((card, index) => {
+      const isValid = validMoves.some(
+        c => c.suit === card.suit && c.rank === card.rank
+      );
+      if (isValid) {
+        this.validCardIndices.push(index);
+      }
+    });
+
     if (mode === 'pass') {
       // Show pass modal
       this.elements.passModal.classList.remove('hidden');
@@ -281,6 +580,9 @@ export class DOMRenderer extends GameRenderer {
       // Play mode - single card selection
       this.renderHandsWithSelection(hand, validMoves, 1);
     }
+
+    // Don't auto-focus - let keyboard users initiate navigation with arrow keys
+    // This avoids confusing mouse users with the focus indicator
   }
 
   /**
@@ -294,6 +596,15 @@ export class DOMRenderer extends GameRenderer {
     const container = this.elements.humanHand;
     container.innerHTML = '';
 
+    // Add ARIA attributes to container
+    container.setAttribute('role', 'listbox');
+    container.setAttribute('aria-label',
+      this.selectionMode === 'pass'
+        ? 'Select 3 cards to pass. Use arrow keys to navigate, Enter or Space to select.'
+        : 'Select a card to play. Use arrow keys to navigate, Enter or Space to select.'
+    );
+    container.setAttribute('aria-multiselectable', this.selectionMode === 'pass' ? 'true' : 'false');
+
     hand.forEach((card, index) => {
       const el = this.createCardElement(card);
       el.dataset.index = index;
@@ -304,8 +615,15 @@ export class DOMRenderer extends GameRenderer {
         c => c.suit === card.suit && c.rank === card.rank
       );
 
+      // Add ARIA attributes for accessibility
+      el.setAttribute('role', 'option');
+      el.setAttribute('aria-label', `${card.rank} of ${SUIT_NAMES[card.suit]}`);
+      el.setAttribute('aria-selected', 'false');
+      el.setAttribute('tabindex', isValid ? '0' : '-1');
+
       if (!isValid) {
         el.classList.add('disabled');
+        el.setAttribute('aria-disabled', 'true');
       }
 
       el.onclick = () => {
@@ -318,10 +636,12 @@ export class DOMRenderer extends GameRenderer {
           if (this.selectedCards.has(cardKey)) {
             this.selectedCards.delete(cardKey);
             el.classList.remove('selected');
+            el.setAttribute('aria-selected', 'false');
           } else {
             if (this.selectedCards.size < maxSelection) {
               this.selectedCards.add(cardKey);
               el.classList.add('selected');
+              el.setAttribute('aria-selected', 'true');
             }
           }
 
@@ -344,9 +664,16 @@ export class DOMRenderer extends GameRenderer {
     this.selectionMode = null;
     this.selectedCards.clear();
 
+    // Clear keyboard navigation state
+    this.clearFocus();
+    this.validCardIndices = [];
+
+    // Clear memoization to force re-render without selection handlers
+    this.lastRenderedHandKey = null;
+
     // Re-render hand without selection handlers
     if (this.currentHand) {
-      this.renderHands([this.currentHand]);
+      this.renderHands([this.currentHand], { force: true });
     }
   }
 

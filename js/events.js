@@ -30,6 +30,9 @@ export const GameEvents = {
 
   // Scoring
   SCORE_UPDATED: 'SCORE_UPDATED',
+
+  // Errors
+  ERROR_OCCURRED: 'ERROR_OCCURRED',
 };
 
 /**

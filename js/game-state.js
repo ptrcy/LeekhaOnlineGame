@@ -3,29 +3,99 @@ import { HumanPlayer } from './player.js';
 import { CardTracker } from './card-tracker.js';
 import { BotAdapter } from './bot-adapter.js';
 import { GameEvents } from './events.js';
+import {
+    GAME_RULES,
+    TIMING,
+    PLAYER_POSITIONS,
+    BOT_CONFIG,
+    DEFAULT_BOT_TYPE
+} from './constants.js';
 
+/**
+ * Manages the state and logic for a Leekha card game.
+ * Handles game flow, player turns, scoring, and card tracking.
+ */
 export class GameState {
+    /**
+     * Create a new GameState instance
+     * @param {GameEventEmitter} eventEmitter - Event emitter for game events
+     */
     constructor(eventEmitter) {
+        /** @type {GameEventEmitter} Event emitter for broadcasting game state changes */
         this.events = eventEmitter;
+        /** @type {Player[]} Array of 4 players in the game */
         this.players = [];
+        /** @type {Card[]} The deck of cards */
         this.deck = [];
-        this.currentTurn = 0; // Index of player
-        this.trick = []; // Cards played in current trick
+        /** @type {number} Index of the current player (0-3) */
+        this.currentTurn = 0;
+        /** @type {Array<{player: number, card: Card}>} Cards played in current trick */
+        this.trick = [];
+        /** @type {number} Current round number (1-based) */
         this.roundNumber = 0;
+        /** @type {number[]} Cumulative scores for each player */
         this.scores = [0, 0, 0, 0];
+        /** @type {CardTracker} Tracks played cards and player voids */
         this.cardTracker = new CardTracker();
-        this.heuristicBot = null; // Will be loaded dynamically
+        /** @type {Object|null} Heuristic bot instance */
+        this.heuristicBot = null;
+        /** @type {Object<number, string>} Maps player index to bot type */
         this.botAssignments = {};
+        /** @type {Object} Simulation configuration for bot testing */
         this.simulation = {
             enabled: false,
             target: 0,
             completed: 0,
             wins: { copy: 0, original: 0 }
         };
+        /** @type {string[][]} Initial hands for each player (for debugging) */
         this.initialHands = [];
+        /** @type {number} Index of the current dealer */
+        this.dealerIndex = 0;
+        /** @type {number|null} Index of player who captured Queen of Spades */
+        this.queenOfSpadesCapturedBy = null;
     }
 
+    /**
+     * Initialize the game with players and start a new game
+     * @param {Player[]} players - Array of exactly 4 player instances
+     * @throws {Error} If players array is invalid or players are missing required methods
+     */
     initialize(players) {
+        // Validate players array
+        if (!Array.isArray(players)) {
+            throw new Error('GameState.initialize: players must be an array');
+        }
+
+        if (players.length !== 4) {
+            throw new Error(`GameState.initialize: expected exactly 4 players, got ${players.length}`);
+        }
+
+        // Validate each player has required properties and methods
+        for (let i = 0; i < players.length; i++) {
+            const player = players[i];
+
+            if (!player) {
+                throw new Error(`GameState.initialize: player at index ${i} is null or undefined`);
+            }
+
+            if (typeof player.name !== 'string' || player.name.trim() === '') {
+                throw new Error(`GameState.initialize: player at index ${i} has invalid name`);
+            }
+
+            if (typeof player.playCard !== 'function') {
+                throw new Error(`GameState.initialize: player at index ${i} missing playCard method`);
+            }
+
+            if (typeof player.choosePassCards !== 'function') {
+                throw new Error(`GameState.initialize: player at index ${i} missing choosePassCards method`);
+            }
+
+            if (!Array.isArray(player.hand)) {
+                throw new Error(`GameState.initialize: player at index ${i} missing hand array`);
+            }
+        }
+
         this.players = players;
 
         // Emit initialization event with player data
@@ -41,54 +111,44 @@ export class GameState {
         this.startNewGame();
     }
 
+    /**
+     * Initialize bot players with their AI adapters
+     * @param {Object<number, string>} botAssignments - Maps player index to bot type
+     * @throws {Error} If bot modules fail to load
+     * @returns {Promise<void>}
+     */
     async initializeBots(botAssignments = {}) {
         try {
             this.botAssignments = botAssignments;
 
-            const botClasses = {};
             const botInstances = {};
 
             // Determine which bot types are needed
             const neededTypes = new Set(Object.values(botAssignments));
-            if (neededTypes.size === 0) neededTypes.add('original'); // Default
+            if (neededTypes.size === 0) neededTypes.add(DEFAULT_BOT_TYPE);
 
             // Bot expects single-character ranks: ['2', '3', ..., '9', 'T', 'J', 'Q', 'K', 'A']
             const botRankReference = RANKS.map(r => r === '10' ? 'T' : r);
 
             for (const type of neededTypes) {
-                let module;
-                let className;
+                // Get config for this bot type, fallback to default if unknown
+                const config = BOT_CONFIG[type] || BOT_CONFIG[DEFAULT_BOT_TYPE];
 
-                if (type === 'original') {
-                    module = await import('../LeekhaHeuristicBot.js');
-                    className = 'LeekhaHeuristicBot';
-                } else if (type === 'copy') {
-                    module = await import('../LeekhaHeuristicBot - Copy.js');
-                    className = 'LeekhaHeuristicBot';
-                } else if (type === 'lm') {
-                    module = await import('../LMBot.js');
-                    className = 'LMBot';
-                } else if (type === 'lmg') {
-                    module = await import('../LMG.js');
-                    className = 'LMBot';
-                } else if (type === 'lmlm') {
-                    module = await import('../LMLM.js');
-                    className = 'LMBot';
-                } else {
-                    console.warn(`Unknown bot type: ${type}, falling back to original`);
-                    module = await import('../LeekhaHeuristicBot.js');
-                    className = 'LeekhaHeuristicBot';
+                if (!BOT_CONFIG[type]) {
+                    console.warn(`Unknown bot type: ${type}, falling back to ${DEFAULT_BOT_TYPE}`);
                 }
 
-                botInstances[type] = new module[className](botRankReference);
+                // Dynamic import using the config
+                const module = await import(config.path);
+                botInstances[type] = new module[config.className](botRankReference);
             }
 
             // Setup adapters for each bot player
             for (let i = 0; i < this.players.length; i++) {
                 const player = this.players[i];
                 if (player.constructor.name === 'BotPlayer') {
-                    const botType = botAssignments[i] || 'original';
-                    const botInstance = botInstances[botType] || botInstances['original'];
+                    const botType = botAssignments[i] || DEFAULT_BOT_TYPE;
+                    const botInstance = botInstances[botType] || botInstances[DEFAULT_BOT_TYPE];
                     const adapter = new BotAdapter(botInstance, i, this);
                     player.setAdapter(adapter);
                 }
@@ -104,20 +164,39 @@ export class GameState {
                 if (this.simulation.wins[this.simulation.team1] === undefined) this.simulation.wins[this.simulation.team1] = 0;
             }
 
-            console.log('✓ Bots initialized successfully');
+            console.log('Bots initialized successfully');
         } catch (error) {
-            console.warn('Failed to load bot, using fallback:', error);
+            const errorMessage = `Failed to initialize bots: ${error.message}`;
+            console.error(errorMessage, error);
+
+            // Emit error event so UI can display feedback
+            this.events.emit(GameEvents.ERROR_OCCURRED, {
+                type: 'bot_initialization',
+                message: errorMessage,
+                error: error
+            });
+
+            // Re-throw to prevent game from continuing in broken state
+            throw new Error(errorMessage);
         }
     }
 
+    /**
+     * Start a new game, resetting all scores and state
+     * Emits GAME_STARTED and SCORE_UPDATED events
+     */
     startNewGame() {
         this.scores = [0, 0, 0, 0];
         this.roundNumber = 0;
 
+        // Set random dealer for the first round
+        this.dealerIndex = Math.floor(Math.random() * 4);
+        this.queenOfSpadesCapturedBy = null;
+
         // Reset all player scores
-        this.players.forEach(p => {
-            p.score = 0;
-            p.currentRoundPoints = 0;
+        this.players.forEach(player => {
+            player.score = 0;
+            player.currentRoundPoints = 0;
         });
 
         // Emit game start event
@@ -133,6 +212,10 @@ export class GameState {
         this.startRound();
     }
 
+    /**
+     * Create and shuffle a new 52-card deck
+     * Uses Fisher-Yates shuffle algorithm
+     */
     createDeck() {
         this.deck = [];
         for (let s of SUITS) {
@@ -147,6 +230,10 @@ export class GameState {
         }
     }
 
+    /**
+     * Deal cards to all players (13 cards each)
+     * Emits TRICK_PILE_CLEAR and HANDS_DEALT events
+     */
     deal() {
         this.createDeck();
 
@@ -154,13 +241,13 @@ export class GameState {
         this.events.emit(GameEvents.TRICK_PILE_CLEAR);
 
         // 13 cards each
-        this.players.forEach(p => p.hand = []);
+        this.players.forEach(player => player.hand = []);
         let pIndex = 0;
         while (this.deck.length > 0) {
             this.players[pIndex].receiveCards([this.deck.pop()]);
             pIndex = (pIndex + 1) % 4;
         }
-        this.players.forEach(p => p.sortHand());
+        this.players.forEach(player => player.sortHand());
 
         // Emit hands dealt event
         this.events.emit(GameEvents.HANDS_DEALT, {
@@ -168,11 +255,17 @@ export class GameState {
         });
     }
 
+    /**
+     * Start a new round of play
+     * Handles dealing, passing phase, and playing all 13 tricks
+     * @returns {Promise<void>}
+     */
     async startRound() {
         this.events.emit(GameEvents.TRICK_PILE_CLEAR);
 
         this.roundNumber++;
         this.cardTracker.reset(); // Reset card tracking for new round
+        this.queenOfSpadesCapturedBy = null; // Reset Q??? tracking for new round
 
         // Emit round start
         this.events.emit(GameEvents.ROUND_START, {
@@ -203,8 +296,7 @@ export class GameState {
         });
 
         // Determine leader: Player to Right of Dealer leads first
-        const dealerIndex = (this.roundNumber - 1) % 4;
-        let leader = (dealerIndex + 1) % 4;
+        let leader = (this.dealerIndex + 1) % 4;
 
         for (let trickNum = 0; trickNum < 13; trickNum++) {
             leader = await this.playTrick(leader);
@@ -213,6 +305,11 @@ export class GameState {
         this.endRound();
     }
 
+    /**
+     * Handle the card passing phase at the start of each round
+     * Each player passes 3 cards to the player on their left
+     * @returns {Promise<void>}
+     */
     async handlePassingPhase() {
         // Emit pass phase start
         this.events.emit(GameEvents.PASS_PHASE_START);
@@ -246,9 +343,14 @@ export class GameState {
         this.events.emit(GameEvents.PASS_PHASE_COMPLETE);
     }
 
+    /**
+     * Play a single trick (4 cards, one from each player)
+     * @param {number} leaderIndex - Index of the player who leads this trick
+     * @returns {Promise<number>} Index of the trick winner (who leads next)
+     */
     async playTrick(leaderIndex) {
         this.trick = [];
-        let currentObj = leaderIndex;
+        let currentPlayerIndex = leaderIndex;
         let leadSuit = null;
 
         // Clear trick pile
@@ -257,18 +359,18 @@ export class GameState {
         for (let i = 0; i < 4; i++) {
             // Emit turn change
             this.events.emit(GameEvents.TURN_CHANGED, {
-                playerIndex: currentObj,
-                playerName: this.players[currentObj].name
+                playerIndex: currentPlayerIndex,
+                playerName: this.players[currentPlayerIndex].name
             });
 
             this.events.emit(GameEvents.STATUS_MESSAGE, {
-                message: `${this.players[currentObj].name}'s Turn`
+                message: `${this.players[currentPlayerIndex].name}'s Turn`
             });
 
-            const card = await this.players[currentObj].playCard(this);
+            const card = await this.players[currentPlayerIndex].playCard(this);
 
             // Execute move
-            this.players[currentObj].removeCards([card]);
+            this.players[currentPlayerIndex].removeCards([card]);
 
             // Emit hand updated
             this.events.emit(GameEvents.HAND_UPDATED, {
@@ -276,33 +378,39 @@ export class GameState {
             });
 
             // Add to trick
-            this.trick.push({ player: currentObj, card: card });
+            this.trick.push({ player: currentPlayerIndex, card: card });
 
             // Track card for bot AI
-            this.cardTracker.recordCardPlayed(card, currentObj, this.trick.slice(0, -1));
+            this.cardTracker.recordCardPlayed(card, currentPlayerIndex, this.trick.slice(0, -1));
 
             // Emit card played event
             this.events.emit(GameEvents.CARD_PLAYED, {
                 card: card,
-                playerIndex: currentObj,
+                playerIndex: currentPlayerIndex,
                 position: i
             });
 
             if (i === 0) leadSuit = card.suit;
 
             // Next player (Anticlockwise)
-            currentObj = (currentObj + 1) % 4;
+            currentPlayerIndex = (currentPlayerIndex + 1) % 4;
         }
 
         // Evaluate Winner
         const winnerIndex = this.evaluateTrick(this.trick, leadSuit);
 
-        await this.delay(2000); // Wait to see trick
+        await this.delay(TIMING.TRICK_DISPLAY_DELAY); // Wait to see trick
 
         // Move cards to winner's pile (logic only, no visual pile needed except for score)
         // Count points
         const points = this.trick.reduce((acc, t) => acc + t.card.points, 0);
         this.players[winnerIndex].currentRoundPoints += points;
+
+        // Check if Queen of Spades was in this trick
+        const hasQueenOfSpades = this.trick.some(t => t.card.suit === 'S' && t.card.rank === 'Q');
+        if (hasQueenOfSpades) {
+            this.queenOfSpadesCapturedBy = winnerIndex;
+        }
 
         // Emit trick complete (triggers collection animation)
         this.events.emit(GameEvents.TRICK_COMPLETE, {
@@ -313,7 +421,7 @@ export class GameState {
         });
 
         // Wait for collection animation to complete
-        await this.delay(500);
+        await this.delay(TIMING.TRICK_COLLECTION_DELAY);
 
         // Emit score update
         this.events.emit(GameEvents.SCORE_UPDATED, {
@@ -326,6 +434,13 @@ export class GameState {
         return winnerIndex;
     }
 
+    /**
+     * Evaluate a completed trick to determine the winner
+     * Winner is the player who played the highest card of the lead suit
+     * @param {Array<{player: number, card: Card}>} trick - Array of played cards
+     * @param {string} leadSuit - The suit that was led
+     * @returns {number} Index of the winning player
+     */
     evaluateTrick(trick, leadSuit) {
         let highest = -1;
         let winnerLocalIndex = -1;
@@ -349,17 +464,17 @@ export class GameState {
         if (!leadCard) return hand; // Can lead anything
 
         const leadSuit = leadCard.suit;
-        const matchingSuit = hand.filter(c => c.suit === leadSuit);
+        const matchingSuitCards = hand.filter(card => card.suit === leadSuit);
 
-        if (matchingSuit.length > 0) {
-            return matchingSuit;
+        if (matchingSuitCards.length > 0) {
+            return matchingSuitCards;
         }
 
         // Void in suit
-        // Check Forced Leekha (Q♠ or 10♦)
-        const leekhaCards = hand.filter(c =>
-            (c.suit === 'S' && c.rank === 'Q') ||
-            (c.suit === 'D' && c.rank === '10')
+        // Check Forced Leekha (Queen of Spades or 10 of Diamonds)
+        const leekhaCards = hand.filter(card =>
+            (card.suit === 'S' && card.rank === 'Q') ||
+            (card.suit === 'D' && card.rank === '10')
         );
 
         if (leekhaCards.length > 0) {
@@ -377,16 +492,16 @@ export class GameState {
         let loser = null;
 
         // Visual delay
-        await this.delay(1000);
+        await this.delay(TIMING.ROUND_END_DELAY);
 
         // Clear table (remove last trick)
         this.events.emit(GameEvents.TRICK_PILE_CLEAR);
 
-        for (let p of this.players) {
-            p.score += p.currentRoundPoints;
-            p.currentRoundPoints = 0; // Reset for next calculation or just keep in history
+        for (const player of this.players) {
+            player.score += player.currentRoundPoints;
+            player.currentRoundPoints = 0; // Reset for next calculation or just keep in history
 
-            if (p.score >= 101) {
+            if (player.score >= GAME_RULES.SCORE_LIMIT) {
                 limitReached = true;
             }
         }
@@ -404,11 +519,16 @@ export class GameState {
         if (limitReached) {
             this.handleGameOver();
         } else {
+            // Update dealer: player who captured the Queen of Spades becomes the new dealer
+            if (this.queenOfSpadesCapturedBy !== null) {
+                this.dealerIndex = this.queenOfSpadesCapturedBy;
+            }
+
             // Next Round
             if (this.simulation?.enabled) {
                 this.startRound();
             } else {
-                setTimeout(() => this.startRound(), 2000);
+                setTimeout(() => this.startRound(), TIMING.ROUND_START_DELAY);
             }
         }
     }
@@ -508,3 +628,5 @@ export class GameState {
         }));
     }
 }
+
+

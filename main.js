@@ -10,56 +10,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize Game
     try {
-        const params = new URLSearchParams(window.location.search);
-        const simGames = parseInt(params.get('sim'), 10);
-        const simulationEnabled = !isNaN(simGames) && simGames > 0;
-
         // Create event system
         const events = new GameEventEmitter();
 
         // Create game state
         const game = new GameState(events);
 
-        if (!simulationEnabled) {
-            // Normal mode: Setup UI
-            const inputController = new DOMInputController(events);
-            const renderer = new DOMRenderer(events, inputController);
+        // Setup UI
+        const inputController = new DOMInputController(events);
+        const renderer = new DOMRenderer(events, inputController);
 
-            // Initialize renderer (setup DOM elements and event subscriptions)
-            renderer.initialize();
+        // Initialize renderer (setup DOM elements and event subscriptions)
+        renderer.initialize();
 
-            // Create players
-            const players = [
-                new HumanPlayer("You", "bottom", inputController),
-                new BotPlayer("East (LMG)", "right"),
-                new BotPlayer("Partner (LMG)", "top"),
-                new BotPlayer("West (LMG)", "left")
-            ];
+        // Create players
+        const players = [
+            new HumanPlayer("You", "bottom", inputController),
+            new BotPlayer("East (LMG)", "right"),
+            new BotPlayer("Partner (LMG)", "top"),
+            new BotPlayer("West (LMG)", "left")
+        ];
 
-            game.initialize(players);
+        game.initialize(players);
 
-            // Initialize AI bots (all use LMG logic)
-            await game.initializeBots({ 1: 'lmg', 2: 'lmg', 3: 'lmg' });
-        } else {
-            // Simulation mode (headless)
-            const players = [
-                new BotPlayer("LMBot A", "bottom"),
-                new BotPlayer("OriginalBot East", "right"),
-                new BotPlayer("LMBot Partner", "top"),
-                new BotPlayer("OriginalBot West", "left")
-            ];
-
-            game.players = players;
-            game.simulation = {
-                enabled: true,
-                target: simGames,
-                completed: 0,
-                wins: {}
-            };
-
-            await game.initializeBots({ 0: 'lm', 2: 'lm', 1: 'original', 3: 'original' });
-            game.startNewGame();
-        }
+        // Initialize AI bots (all use LMG logic)
+        await game.initializeBots({ 1: 'lmg', 2: 'lmg', 3: 'lmg' });
 
         // Debug access
         window.game = game;
