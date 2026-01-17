@@ -2,13 +2,13 @@ import { Card, SUITS, RANKS } from './card.js';
 import { HumanPlayer } from './player.js';
 import { CardTracker } from './card-tracker.js';
 import { BotAdapter } from './bot-adapter.js';
+import { LMBot as LMGBot } from '../tools/botsim/bots/LMG.js';
+import { LMBot as LMLMBot } from '../tools/botsim/bots/LMLM.js';
 import { GameEvents } from './events.js';
 import {
     GAME_RULES,
     TIMING,
-    PLAYER_POSITIONS,
-    BOT_CONFIG,
-    DEFAULT_BOT_TYPE
+    PLAYER_POSITIONS
 } from './constants.js';
 
 /**
@@ -130,17 +130,15 @@ export class GameState {
             // Bot expects single-character ranks: ['2', '3', ..., '9', 'T', 'J', 'Q', 'K', 'A']
             const botRankReference = RANKS.map(r => r === '10' ? 'T' : r);
 
+            // Use statically imported bot classes
+            const BOT_CLASSES = {
+                'lmg': LMGBot,
+                'lmlm': LMLMBot
+            };
+
             for (const type of neededTypes) {
-                // Get config for this bot type, fallback to default if unknown
-                const config = BOT_CONFIG[type] || BOT_CONFIG[DEFAULT_BOT_TYPE];
-
-                if (!BOT_CONFIG[type]) {
-                    console.warn(`Unknown bot type: ${type}, falling back to ${DEFAULT_BOT_TYPE}`);
-                }
-
-                // Dynamic import using the config
-                const module = await import(config.path);
-                botInstances[type] = new module[config.className](botRankReference);
+                const BotClass = BOT_CLASSES[type] || LMGBot;
+                botInstances[type] = new BotClass(botRankReference);
             }
 
             // Setup adapters for each bot player

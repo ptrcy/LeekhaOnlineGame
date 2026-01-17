@@ -4,8 +4,8 @@
   "description": "Leekha (Likha) Online Card Game",
   "type": "module",
   "scripts": {
-    "build": "node build.cjs",
-    "serve": "npx serve dist"
+    "build": "bun build.ts",
+    "serve": "bun --bun serve dist"
   },
   "dependencies": {}
 }

@@ -605,56 +605,118 @@ export class DOMRenderer extends GameRenderer {
     );
     container.setAttribute('aria-multiselectable', this.selectionMode === 'pass' ? 'true' : 'false');
 
-    hand.forEach((card, index) => {
-      const el = this.createCardElement(card);
-      el.dataset.index = index;
-      el.dataset.suit = card.suit;
-      el.dataset.rank = card.rank;
+    // Separate cards into playable and non-playable
+    const playableCards = [];
+    const nonPlayableCards = [];
 
+    hand.forEach((card, index) => {
       const isValid = validCards.some(
         c => c.suit === card.suit && c.rank === card.rank
       );
-
-      // Add ARIA attributes for accessibility
-      el.setAttribute('role', 'option');
-      el.setAttribute('aria-label', `${card.rank} of ${SUIT_NAMES[card.suit]}`);
-      el.setAttribute('aria-selected', 'false');
-      el.setAttribute('tabindex', isValid ? '0' : '-1');
-
-      if (!isValid) {
-        el.classList.add('disabled');
-        el.setAttribute('aria-disabled', 'true');
+      if (isValid) {
+        playableCards.push({ card, index });
+      } else {
+        nonPlayableCards.push({ card, index });
       }
-
-      el.onclick = () => {
-        if (!isValid) return;
-
-        if (this.selectionMode === 'pass') {
-          // Multi-selection for passing
-          const cardKey = `${card.suit}${card.rank}`;
-
-          if (this.selectedCards.has(cardKey)) {
-            this.selectedCards.delete(cardKey);
-            el.classList.remove('selected');
-            el.setAttribute('aria-selected', 'false');
-          } else {
-            if (this.selectedCards.size < maxSelection) {
-              this.selectedCards.add(cardKey);
-              el.classList.add('selected');
-              el.setAttribute('aria-selected', 'true');
-            }
-          }
-
-          // Update button state
-          this.elements.confirmPassBtn.disabled = (this.selectedCards.size !== maxSelection);
-        } else if (this.selectionMode === 'play') {
-          // Single selection for playing
-          this.inputController.handleCardClick(card);
-        }
-      };
-
-      container.appendChild(el);
     });
+
+    // Check if we need two rows (some cards are not playable)
+    const needsTwoRows = nonPlayableCards.length > 0 && playableCards.length > 0 && playableCards.length < hand.length;
+
+    if (needsTwoRows) {
+      container.classList.add('two-row-mode');
+
+      // Create playable row (top)
+      const playableRow = document.createElement('div');
+      playableRow.className = 'card-row playable-row';
+      playableRow.setAttribute('aria-label', 'Playable cards');
+
+      // Create non-playable row (bottom)
+      const nonPlayableRow = document.createElement('div');
+      nonPlayableRow.className = 'card-row non-playable-row';
+      nonPlayableRow.setAttribute('aria-label', 'Non-playable cards');
+
+      // Add playable cards
+      playableCards.forEach(({ card, index }) => {
+        const el = this.createSelectableCardElement(card, index, true, maxSelection);
+        playableRow.appendChild(el);
+      });
+
+      // Add non-playable cards
+      nonPlayableCards.forEach(({ card, index }) => {
+        const el = this.createSelectableCardElement(card, index, false, maxSelection);
+        nonPlayableRow.appendChild(el);
+      });
+
+      container.appendChild(playableRow);
+      container.appendChild(nonPlayableRow);
+    } else {
+      container.classList.remove('two-row-mode');
+
+      // Single row mode - all cards in one row
+      hand.forEach((card, index) => {
+        const isValid = validCards.some(
+          c => c.suit === card.suit && c.rank === card.rank
+        );
+        const el = this.createSelectableCardElement(card, index, isValid, maxSelection);
+        container.appendChild(el);
+      });
+    }
+  }
+
+  /**
+   * Create a card element with selection handling
+   * @param {Card} card - Card object
+   * @param {number} index - Index in hand
+   * @param {boolean} isValid - Whether card can be selected
+   * @param {number} maxSelection - Max cards to select
+   * @returns {HTMLElement} Card element
+   */
+  createSelectableCardElement(card, index, isValid, maxSelection) {
+    const el = this.createCardElement(card);
+    el.dataset.index = index;
+    el.dataset.suit = card.suit;
+    el.dataset.rank = card.rank;
+
+    // Add ARIA attributes for accessibility
+    el.setAttribute('role', 'option');
+    el.setAttribute('aria-label', `${card.rank} of ${SUIT_NAMES[card.suit]}`);
+    el.setAttribute('aria-selected', 'false');
+    el.setAttribute('tabindex', isValid ? '0' : '-1');
+
+    if (!isValid) {
+      el.classList.add('disabled');
+      el.setAttribute('aria-disabled', 'true');
+    }
+
+    el.onclick = () => {
+      if (!isValid) return;
+
+      if (this.selectionMode === 'pass') {
+        // Multi-selection for passing
+        const cardKey = `${card.suit}${card.rank}`;
+
+        if (this.selectedCards.has(cardKey)) {
+          this.selectedCards.delete(cardKey);
+          el.classList.remove('selected');
+          el.setAttribute('aria-selected', 'false');
+        } else {
+          if (this.selectedCards.size < maxSelection) {
+            this.selectedCards.add(cardKey);
+            el.classList.add('selected');
+            el.setAttribute('aria-selected', 'true');
+          }
+        }
+
+        // Update button state
+        this.elements.confirmPassBtn.disabled = (this.selectedCards.size !== maxSelection);
+      } else if (this.selectionMode === 'play') {
+        // Single selection for playing
+        this.inputController.handleCardClick(card);
+      }
+    };
+
+    return el;
   }
 
   /**
@@ -667,6 +729,9 @@ export class DOMRenderer extends GameRenderer {
     // Clear keyboard navigation state
     this.clearFocus();
     this.validCardIndices = [];
+
+    // Remove two-row mode class
+    this.elements.humanHand.classList.remove('two-row-mode');
 
     // Clear memoization to force re-render without selection handlers
     this.lastRenderedHandKey = null;
