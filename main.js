@@ -4,6 +4,7 @@ import { HumanPlayer, BotPlayer } from './js/player.js';
 import { GameEventEmitter } from './js/events.js';
 import { DOMRenderer } from './js/renderer.js';
 import { DOMInputController } from './js/input-controller.js';
+import { AudioManager } from './js/audio.js';
 
 // Entry point
 document.addEventListener('DOMContentLoaded', async () => {
@@ -13,6 +14,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Create event system
         const events = new GameEventEmitter();
+
+        // Create audio manager
+        const audioManager = new AudioManager(events);
 
         // Create game state
         const game = new GameState(events);
