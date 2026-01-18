@@ -206,6 +206,10 @@ export class DOMInputController extends InputController {
       this.timeout = null;
 
       this.events.emit(GameEvents.DISABLE_CARD_SELECTION);
+      this.events.emit(GameEvents.ERROR_OCCURRED, {
+        type: 'selection_timeout',
+        message: reason
+      });
       reject(new Error(reason));
     }
   }
@@ -226,6 +230,10 @@ export class DOMInputController extends InputController {
       this.timeout = null;
 
       this.events.emit(GameEvents.DISABLE_CARD_SELECTION);
+      this.events.emit(GameEvents.ERROR_OCCURRED, {
+        type: 'selection_timeout',
+        message: reason
+      });
       reject(new Error(reason));
     }
   }

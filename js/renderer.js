@@ -474,24 +474,7 @@ export class DOMRenderer extends GameRenderer {
     const el = this.createCardElement(card);
     el.style.position = 'absolute';
 
-    // Get card dimensions from CSS variables
-    const cardWidth = parseFloat(getComputedStyle(document.documentElement)
-        .getPropertyValue('--card-width')) || 90;
-    const cardHeight = parseFloat(getComputedStyle(document.documentElement)
-        .getPropertyValue('--card-height')) || 126;
-
-    // Spacing from center
-    const spacing = 80;
-
-    // Fixed positions with minimal rotation
-    const positions = [
-      { x: 0, y: spacing, rotation: 0 },        // Bottom - You
-      { x: spacing, y: 0, rotation: 5 },        // Right - East
-      { x: 0, y: -spacing, rotation: 0 },      // Top - Partner
-      { x: -spacing, y: 0, rotation: -5 }      // Left - West
-    ];
-
-    const pos = positions[playerIndex];
+    const pos = CARD_DISPLAY.TRICK_POSITIONS[playerIndex];
 
     // Center the card and apply position
     el.style.left = '50%';
@@ -874,16 +857,7 @@ export class DOMRenderer extends GameRenderer {
     const cards = this.elements.trickPile.querySelectorAll('.card');
     if (cards.length === 0) return;
 
-    // Define target positions for each player (where cards should fly to)
-    // These are offsets from center, moving cards toward player positions
-    const targetOffsets = [
-      { x: 0, y: 200 },     // Bottom (You) - move down
-      { x: 250, y: 0 },     // Right (East) - move right
-      { x: 0, y: -200 },    // Top (Partner) - move up
-      { x: -250, y: 0 }     // Left (West) - move left
-    ];
-
-    const target = targetOffsets[winnerIndex];
+    const target = CARD_DISPLAY.COLLECTION_OFFSETS[winnerIndex];
 
     // Animate each card toward the winner
     cards.forEach((card) => {

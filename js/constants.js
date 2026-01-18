@@ -110,31 +110,4 @@ export const SPECIAL_CARDS = {
     TEN_OF_DIAMONDS: { suit: 'D', rank: '10' }
 };
 
-// =============================================================================
-// BOT CONFIGURATION
-// =============================================================================
-
-export const BOT_CONFIG = {
-    'original': {
-        path: '../botsim/bots/LeekhaHeuristicBot.js',
-        className: 'LeekhaHeuristicBot'
-    },
-    'copy': {
-        path: '../botsim/bots/LeekhaHeuristicBot - Copy.js',
-        className: 'LeekhaHeuristicBot'
-    },
-    'lm': {
-        path: '../botsim/bots/LMBot.js',
-        className: 'LMBot'
-    },
-    'lmg': {
-        path: '../botsim/bots/LMG.js',
-        className: 'LMBot'
-    },
-    'lmlm': {
-        path: '../botsim/bots/LMLM.js',
-        className: 'LMBot'
-    }
-};
-
-export const DEFAULT_BOT_TYPE = 'original';
+export const DEFAULT_BOT_TYPE = 'lmg';

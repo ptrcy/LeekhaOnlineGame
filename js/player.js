@@ -1,3 +1,5 @@
+import { GameEvents } from './events.js';
+
 export class Player {
     constructor(name, position) {
         this.name = name;
@@ -40,14 +42,42 @@ export class HumanPlayer extends Player {
     }
 
     async choosePassCards(gameState) {
-        console.log("Human needs to choose 3 cards");
-        return await this.input.getPassSelection(this.hand);
+        try {
+            return await this.input.getPassSelection(this.hand);
+        } catch (error) {
+            if (gameState && gameState.events) {
+                gameState.events.emit(GameEvents.ERROR_OCCURRED, {
+                    type: 'input_error',
+                    message: error.message || 'Pass selection failed, using fallback cards',
+                    error
+                });
+            }
+            const sorted = [...this.hand].sort((a, b) => b.value - a.value);
+            return sorted.slice(0, 3);
+        }
     }
 
     async playCard(gameState) {
-        console.log("Your turn!");
-        const validMoves = gameState.getValidMoves(this.hand);
-        return await this.input.getCardSelection(this.hand, validMoves);
+        try {
+            const validMoves = gameState.getValidMoves(this.hand);
+            return await this.input.getCardSelection(this.hand, validMoves);
+        } catch (error) {
+            if (gameState && gameState.events) {
+                gameState.events.emit(GameEvents.ERROR_OCCURRED, {
+                    type: 'input_error',
+                    message: error.message || 'Card selection failed, playing fallback card',
+                    error
+                });
+            }
+            try {
+                const validMoves = gameState.getValidMoves(this.hand);
+                if (validMoves && validMoves.length > 0) {
+                    return validMoves[0];
+                }
+            } catch {
+            }
+            return this.hand[0];
+        }
     }
 }
 

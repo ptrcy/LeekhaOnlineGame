@@ -8,7 +8,8 @@ import { GameEvents } from './events.js';
 import {
     GAME_RULES,
     TIMING,
-    PLAYER_POSITIONS
+    PLAYER_POSITIONS,
+    DEFAULT_BOT_TYPE
 } from './constants.js';
 
 /**
@@ -365,7 +366,31 @@ export class GameState {
                 message: `${this.players[currentPlayerIndex].name}'s Turn`
             });
 
-            const card = await this.players[currentPlayerIndex].playCard(this);
+            let card;
+            try {
+                card = await this.players[currentPlayerIndex].playCard(this);
+            } catch (error) {
+                this.events.emit(GameEvents.ERROR_OCCURRED, {
+                    type: 'play_card_error',
+                    message: error.message || 'Failed to get card from player, using fallback card',
+                    error,
+                    playerIndex: currentPlayerIndex
+                });
+            }
+
+            const player = this.players[currentPlayerIndex];
+            if (!card || !player.hand.includes(card)) {
+                try {
+                    const legalMoves = this.getValidMoves(player.hand);
+                    if (legalMoves && legalMoves.length > 0) {
+                        card = legalMoves[0];
+                    }
+                } catch {
+                    if (player.hand.length > 0) {
+                        card = player.hand[0];
+                    }
+                }
+            }
 
             // Execute move
             this.players[currentPlayerIndex].removeCards([card]);
@@ -451,6 +476,10 @@ export class GameState {
                 }
             }
         });
+
+        if (winnerLocalIndex === -1) {
+            winnerLocalIndex = 0;
+        }
 
         return trick[winnerLocalIndex].player;
     }
@@ -626,5 +655,3 @@ export class GameState {
         }));
     }
 }
-
-
