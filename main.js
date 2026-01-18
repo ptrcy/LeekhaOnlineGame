@@ -26,15 +26,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Create players
         const players = [
             new HumanPlayer("You", "bottom", inputController),
-            new BotPlayer("East (LMG)", "right"),
-            new BotPlayer("Partner (LMG)", "top"),
-            new BotPlayer("West (LMG)", "left")
+            new BotPlayer("East (LMX)", "right"),
+            new BotPlayer("Partner (LMX)", "top"),
+            new BotPlayer("West (LMX)", "left")
         ];
 
         game.initialize(players);
 
-        // Initialize AI bots (all use LMG logic)
-        await game.initializeBots({ 1: 'lmg', 2: 'lmg', 3: 'lmg' });
+        // Initialize AI bots (all use LMX logic)
+        await game.initializeBots({ 1: 'lmx', 2: 'lmx', 3: 'lmx' });
 
         // Debug access
         window.game = game;

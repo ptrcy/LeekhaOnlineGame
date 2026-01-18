@@ -4,6 +4,7 @@ import { CardTracker } from './card-tracker.js';
 import { BotAdapter } from './bot-adapter.js';
 import { LMBot as LMGBot } from '../tools/botsim/bots/LMG.js';
 import { LMBot as LMLMBot } from '../tools/botsim/bots/LMLM.js';
+import { LMBot as LMXBot } from '../tools/botsim/bots/LMX.js';
 import { GameEvents } from './events.js';
 import {
     GAME_RULES,
@@ -134,7 +135,8 @@ export class GameState {
             // Use statically imported bot classes
             const BOT_CLASSES = {
                 'lmg': LMGBot,
-                'lmlm': LMLMBot
+                'lmlm': LMLMBot,
+                'lmx': LMXBot
             };
 
             for (const type of neededTypes) {
