@@ -514,7 +514,9 @@ export class GameState {
     }
 
     async endRound() {
-        console.log("Round End");
+        if (!this.simulation || !this.simulation.enabled) {
+            console.log("Round End");
+        }
 
         // Add round points to total score
         let limitReached = false;

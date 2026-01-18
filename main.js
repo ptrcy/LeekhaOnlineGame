@@ -26,9 +26,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Create players
         const players = [
             new HumanPlayer("You", "bottom", inputController),
-            new BotPlayer("East (LMX)", "right"),
-            new BotPlayer("Partner (LMX)", "top"),
-            new BotPlayer("West (LMX)", "left")
+            new BotPlayer("Eddy", "right"),
+            new BotPlayer("Pat", "top"),
+            new BotPlayer("Walid", "left")
         ];
 
         game.initialize(players);
