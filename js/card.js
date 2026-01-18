@@ -1,3 +1,4 @@
+"use strict";
 export class Card {
     constructor(suit, rank) {
         this.suit = suit; // 'H', 'D', 'S', 'C'

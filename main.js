@@ -1,3 +1,4 @@
+"use strict";
 import { GameState } from './js/game-state.js';
 import { HumanPlayer, BotPlayer } from './js/player.js';
 import { GameEventEmitter } from './js/events.js';
@@ -33,11 +34,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         game.initialize(players);
 
-        // Initialize AI bots (all use LMX logic)
-        await game.initializeBots({ 1: 'lmx', 2: 'lmx', 3: 'lmx' });
+        // Initialize AI bots from URL params or default
+        const urlParams = new URLSearchParams(window.location.search);
+        const botParam = urlParams.get('bots');
+        let botAssignments = { 1: 'lmx', 2: 'lmx', 3: 'lmx' }; // Default
+        if (botParam) {
+            const botTypes = botParam.split(',');
+            if (botTypes.length === 3) {
+                botAssignments = {
+                    1: botTypes[0],
+                    2: botTypes[1],
+                    3: botTypes[2]
+                };
+            }
+        }
+        await game.initializeBots(botAssignments);
 
         // Debug access
-        window.game = game;
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            window.game = game;
+        }
 
         // Debug: Press F7 to save game state
         document.addEventListener('keydown', (e) => {
@@ -46,13 +62,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const state = game.getCurrentState();
                 const timestamp = new Date().toISOString().replace(/:/g, '-');
                 const filename = `leekha-round-state-${timestamp}.json`;
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+                const blob = new Blob([JSON.stringify(state, null, 2)], {type : 'application/json'});
+                const url = URL.createObjectURL(blob);
                 const downloadAnchorNode = document.createElement('a');
-                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("href", url);
                 downloadAnchorNode.setAttribute("download", filename);
                 document.body.appendChild(downloadAnchorNode);
                 downloadAnchorNode.click();
                 downloadAnchorNode.remove();
+                URL.revokeObjectURL(url);
                 console.log(`Game state saved to ${filename}`);
             }
         });

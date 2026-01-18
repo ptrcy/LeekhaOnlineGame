@@ -1,3 +1,4 @@
+"use strict";
 /**
  * Tracks cards played and player information for bot AI
  */

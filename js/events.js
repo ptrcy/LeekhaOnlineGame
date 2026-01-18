@@ -1,3 +1,4 @@
+"use strict";
 /**
  * Event names used throughout the game
  */

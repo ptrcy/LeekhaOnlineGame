@@ -1,3 +1,4 @@
+"use strict";
 /**
  * Adapter to integrate LeekhaHeuristicBot with the game engine
  */

@@ -1,3 +1,4 @@
+"use strict";
 import { Card, SUITS, RANKS } from './card.js';
 import { HumanPlayer } from './player.js';
 import { CardTracker } from './card-tracker.js';

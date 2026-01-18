@@ -4,7 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;">
     <title>Likha - Premium Card Game</title>
+    <meta name="description" content="Play the classic card game Leekha online against AI opponents.">
+    <meta name="theme-color" content="#1e293b">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🃏</text></svg>">
     <link rel="stylesheet" href="style.css">
 
     <!-- Preload critical fonts -->
@@ -108,36 +112,7 @@
     </div>
 
     <!-- Error Handling Script -->
-    <script>
-        window.onerror = function (msg, url, line, col, error) {
-            const status = document.getElementById('status-text');
-            if (status) {
-                status.textContent = "Error: " + msg;
-                status.style.color = 'red';
-            }
-            // Also create a visual overlay for detailed error if possible
-            const errDiv = document.createElement('div');
-            errDiv.style.position = 'fixed';
-            errDiv.style.top = '0';
-            errDiv.style.left = '0';
-            errDiv.style.width = '100%';
-            errDiv.style.background = 'rgba(100,0,0,0.9)';
-            errDiv.style.color = 'white';
-            errDiv.style.padding = '20px';
-            errDiv.style.zIndex = '99999';
-            errDiv.textContent = `Error: ${msg}\nIn ${url}:${line}:${col}`;
-            document.body.appendChild(errDiv);
-            return false;
-        };
-        // Catch promise rejections too
-        window.onunhandledrejection = function (event) {
-            const status = document.getElementById('status-text');
-            if (status) {
-                status.textContent = "Error: " + event.reason;
-                status.style.color = 'red';
-            }
-        };
-    </script>
+    <script src="js/error-handling.js" defer></script>
 
     <!-- Scripts -->
     <script type="module" src="main.js"></script>

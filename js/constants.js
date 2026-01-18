@@ -1,3 +1,4 @@
+"use strict";
 /**
  * Game constants and configuration values
  * Centralizes magic numbers and configuration for easier maintenance

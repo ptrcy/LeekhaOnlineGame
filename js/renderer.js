@@ -1,3 +1,4 @@
+"use strict";
 import { GameEvents } from './events.js';
 import {
     TIMING,
