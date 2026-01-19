@@ -1,16 +1,21 @@
 "use strict";
 
 const SOUND_DEFS = {
-    playCard: ["0",",",",0.0113,,0.207,0.4859,,,-0.6979,0.5969,,,,,,,1,,,,,0.5"],
-    winTrick: ["0",",",",0.3926,,0.4962,0.2222,,0.2336,,,,,0.4356,0.1197,,,,1,,,,,0.5"],
-    deal: ["0",",",",0.0199,,0.2587,0.0637,,-0.7107,,,,,,,,,,,1,,,,,0.5"]
+    playCard: new jsfxr.Params().blipSelect(),
+    winTrick: new jsfxr.Params().pickupCoin(),
+    deal: new jsfxr.Params().blipSelect()
 };
+
+// Customize the deal sound to be a bit different
+SOUND_DEFS.deal.p_base_freq = 0.6 + Math.random() * 0.2;
+SOUND_DEFS.deal.p_env_sustain = 0.1;
+
 
 class AudioManager {
     constructor(eventEmitter) {
         this.events = eventEmitter;
         this.sounds = {};
-        this.masterVolume = 0.5;
+        this.masterVolume = 0.2;
         this.isEnabled = true;
 
         this.preload();
@@ -19,9 +24,7 @@ class AudioManager {
 
     preload() {
         for (const key in SOUND_DEFS) {
-            const audio = new Audio();
-            audio.src = sfxr.toWave(SOUND_DEFS[key]).dataURI;
-            this.sounds[key] = audio;
+            this.sounds[key] = jsfxr.sfxr.toAudio(SOUND_DEFS[key]);
         }
     }
 
