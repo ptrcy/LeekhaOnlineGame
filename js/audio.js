@@ -1,9 +1,9 @@
 "use strict";
 
 const SOUND_DEFS = {
-    playCard: new jsfxr.Params().blipSelect(),
-    winTrick: new jsfxr.Params().pickupCoin(),
-    deal: new jsfxr.Params().blipSelect()
+    playCard: new Params().blipSelect(),
+    winTrick: new Params().pickupCoin(),
+    deal: new Params().blipSelect()
 };
 
 // Customize the deal sound to be a bit different
@@ -24,7 +24,7 @@ class AudioManager {
 
     preload() {
         for (const key in SOUND_DEFS) {
-            this.sounds[key] = jsfxr.sfxr.toAudio(SOUND_DEFS[key]);
+            this.sounds[key] = sfxr.toAudio(SOUND_DEFS[key]);
         }
     }
 

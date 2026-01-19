@@ -29,7 +29,7 @@ bun build
 After building the project, you can serve the contents of the `dist` directory with the following command:
 
 ```bash
-bun serve
+bun start
 ```
 
 This will start a local web server, and you can access the game in your browser at the URL provided in the console (usually `http://localhost:3000`).

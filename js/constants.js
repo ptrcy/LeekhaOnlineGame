@@ -22,13 +22,14 @@ export const GAME_RULES = {
 
 export const TIMING = {
     // Player interaction timeouts
-    SELECTION_TIMEOUT: 60000,        // 60 seconds for card selection
+    // User requested infinite wait for human player ("it's not a problem. wait")
+    SELECTION_TIMEOUT: 2147483647,   // ~24 days (effectively infinite)
 
     // Animation and display delays
-    TRICK_DISPLAY_DELAY: 2000,       // Time to view trick before collection
-    TRICK_COLLECTION_DELAY: 500,     // Animation time for collecting trick
-    ROUND_END_DELAY: 1000,           // Delay before clearing table at round end
-    ROUND_START_DELAY: 2000,         // Delay before starting next round
+    TRICK_DISPLAY_DELAY: 500,        // Much faster trick view
+    TRICK_COLLECTION_DELAY: 300,     // Faster collection
+    ROUND_END_DELAY: 500,            // Faster round end
+    ROUND_START_DELAY: 1000,         // Faster new round
 
     // Notification durations
     NOTIFICATION_DEFAULT: 3000,      // Default toast duration

@@ -106,7 +106,7 @@ export class BotPlayer extends Player {
     async playCard(gameState) {
         // Fake thinking delay for realism (skip during simulations)
         if (!gameState?.simulation?.enabled) {
-            await new Promise(r => setTimeout(r, 800 + Math.random() * 400));
+            await new Promise(r => setTimeout(r, 300 + Math.random() * 200));
         }
 
         if (this.adapter) {

@@ -1,10 +1,10 @@
 "use strict";
 import { GameEvents } from './events.js';
 import {
-    TIMING,
-    PLAYER_ELEMENT_IDS,
-    CARD_DISPLAY,
-    SUIT_NAMES
+  TIMING,
+  PLAYER_ELEMENT_IDS,
+  CARD_DISPLAY,
+  SUIT_NAMES
 } from './constants.js';
 
 /**
@@ -473,17 +473,9 @@ export class DOMRenderer extends GameRenderer {
    */
   renderTrickCard(card, playerIndex) {
     const el = this.createCardElement(card);
-    el.style.position = 'absolute';
 
-    const pos = CARD_DISPLAY.TRICK_POSITIONS[playerIndex];
-
-    // Center the card and apply position
-    el.style.left = '50%';
-    el.style.top = '50%';
-    el.style.transform = `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px)) rotate(${pos.rotation}deg)`;
-
-    // Add z-index so later cards appear on top
-    el.style.zIndex = playerIndex + 1;
+    // Use CSS classes for positioning (resolves CSP inline-style issues)
+    el.classList.add(`trick-pos-${playerIndex}`);
 
     this.elements.trickPile.appendChild(el);
   }
@@ -604,48 +596,19 @@ export class DOMRenderer extends GameRenderer {
       }
     });
 
-    // Check if we need two rows (some cards are not playable)
-    const needsTwoRows = nonPlayableCards.length > 0 && playableCards.length > 0 && playableCards.length < hand.length;
+    // Single row mode - all cards in one row
+    container.classList.remove('two-row-mode');
 
-    if (needsTwoRows) {
-      container.classList.add('two-row-mode');
+    // Add help text to container aria-label
+    // ... (existing helper logic maintained via createSelectableCardElement)
 
-      // Create playable row (top)
-      const playableRow = document.createElement('div');
-      playableRow.className = 'card-row playable-row';
-      playableRow.setAttribute('aria-label', 'Playable cards');
-
-      // Create non-playable row (bottom)
-      const nonPlayableRow = document.createElement('div');
-      nonPlayableRow.className = 'card-row non-playable-row';
-      nonPlayableRow.setAttribute('aria-label', 'Non-playable cards');
-
-      // Add playable cards
-      playableCards.forEach(({ card, index }) => {
-        const el = this.createSelectableCardElement(card, index, true, maxSelection);
-        playableRow.appendChild(el);
-      });
-
-      // Add non-playable cards
-      nonPlayableCards.forEach(({ card, index }) => {
-        const el = this.createSelectableCardElement(card, index, false, maxSelection);
-        nonPlayableRow.appendChild(el);
-      });
-
-      container.appendChild(playableRow);
-      container.appendChild(nonPlayableRow);
-    } else {
-      container.classList.remove('two-row-mode');
-
-      // Single row mode - all cards in one row
-      hand.forEach((card, index) => {
-        const isValid = validCards.some(
-          c => c.suit === card.suit && c.rank === card.rank
-        );
-        const el = this.createSelectableCardElement(card, index, isValid, maxSelection);
-        container.appendChild(el);
-      });
-    }
+    hand.forEach((card, index) => {
+      const isValid = validCards.some(
+        c => c.suit === card.suit && c.rank === card.rank
+      );
+      const el = this.createSelectableCardElement(card, index, isValid, maxSelection);
+      container.appendChild(el);
+    });
   }
 
   /**

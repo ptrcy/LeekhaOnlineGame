@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const events = new GameEventEmitter();
 
         // Create audio manager
-        const audioManager = new AudioManager(events);
+        // const audioManager = new AudioManager(events);
 
         // Create game state
         const game = new GameState(events);
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const state = game.getCurrentState();
                 const timestamp = new Date().toISOString().replace(/:/g, '-');
                 const filename = `leekha-round-state-${timestamp}.json`;
-                const blob = new Blob([JSON.stringify(state, null, 2)], {type : 'application/json'});
+                const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const downloadAnchorNode = document.createElement('a');
                 downloadAnchorNode.setAttribute("href", url);

@@ -44,6 +44,8 @@ async function bundleJS() {
 function copyStatic() {
     const staticFiles = ['index.html', 'style.css'];
     const staticDirs = ['assets'];
+    // Copy library files that are not bundled but referenced
+    const libFiles = ['js/sfxr.js', 'js/riffwave.js', 'js/error-handling.js'];
 
     for (const file of staticFiles) {
         const src = join(ROOT, file);
@@ -60,6 +62,24 @@ function copyStatic() {
         if (existsSync(src)) {
             cpSync(src, dest, { recursive: true });
             console.log(`✓ Copied ${dir}/`);
+        }
+    }
+
+    // Copy library files to dist/js/
+    const distJsDir = join(ROOT, DIST_DIR, 'js');
+    if (!existsSync(distJsDir)) {
+        mkdirSync(distJsDir);
+    }
+
+    for (const file of libFiles) {
+        const src = join(ROOT, file);
+        const dest = join(ROOT, DIST_DIR, file);
+        // Ensure directory exists for file
+        if (existsSync(src)) {
+            cpSync(src, dest);
+            console.log(`✓ Copied ${file}`);
+        } else {
+            console.warn(`! Warning: ${file} not found`);
         }
     }
 }

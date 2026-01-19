@@ -297,6 +297,7 @@ body {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -308,6 +309,7 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+
     to {
         opacity: 0;
         transform: translateY(-20px);
@@ -431,6 +433,34 @@ body {
     flex-shrink: 0;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
     transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+}
+
+/* Trick Positions (Replacing inline styles) */
+/* Player 0 (Bottom/You): (0, 80) */
+.trick-pos-0 {
+    transform: translate(calc(-50% + 0px), calc(-50% + 80px)) rotate(0deg);
+    z-index: 1;
+}
+
+/* Player 1 (Right): (80, 0, 5deg) */
+.trick-pos-1 {
+    transform: translate(calc(-50% + 80px), calc(-50% + 0px)) rotate(5deg);
+    z-index: 2;
+}
+
+/* Player 2 (Top): (0, -80) */
+.trick-pos-2 {
+    transform: translate(calc(-50% + 0px), calc(-50% - 80px)) rotate(0deg);
+    z-index: 3;
+}
+
+/* Player 3 (Left): (-80, 0, -5deg) */
+.trick-pos-3 {
+    transform: translate(calc(-50% - 80px), calc(-50% + 0px)) rotate(-5deg);
+    z-index: 4;
 }
 
 #trick-pile .card.collecting {
@@ -483,9 +513,12 @@ body {
 }
 
 @keyframes pulse-glow {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.08);
     }
@@ -652,174 +685,23 @@ body {
     min-height: calc(var(--hand-card-height) + 40px);
 }
 
-/* Two-row mode for playable/non-playable separation */
-#human-hand.two-row-mode {
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    height: calc(var(--hand-card-height) * 1.6 + 60px);
-    min-height: calc(var(--hand-card-height) * 1.6 + 60px);
-    gap: 8px;
-    padding-bottom: 5px;
+/* Card States */
+.card.disabled {
+    opacity: 0.5;
+    filter: grayscale(0.8);
+    cursor: not-allowed !important;
+    transform: scale(0.9);
 }
 
-.card-row {
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    flex-wrap: nowrap;
-    width: 100%;
-    position: relative;
-}
-
-/* Playable row - prominent, on top */
-.playable-row {
-    padding: 8px 16px;
-    background: linear-gradient(180deg,
-        rgba(245, 158, 11, 0.15) 0%,
-        rgba(245, 158, 11, 0.05) 100%);
-    border-radius: 16px;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    box-shadow:
-        0 0 20px rgba(245, 158, 11, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    position: relative;
-    min-height: calc(var(--hand-card-height) * 0.7 + 16px);
-}
-
-.playable-row::before {
-    content: 'PLAY';
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-    color: var(--bg-primary);
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 12px;
-    border-radius: 10px;
-    letter-spacing: 1px;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
-}
-
-/* Playable cards slightly smaller to fit better */
-.playable-row .card {
-    transform: scale(0.75);
-    margin-right: calc(var(--hand-card-overlap) * 0.7);
-}
-
-.playable-row .card:last-child {
-    margin-right: 0;
-}
-
-.playable-row .card:hover {
-    transform: scale(0.82) translateY(-10px);
+.card:not(.disabled):hover {
+    transform: translateY(-20px) scale(1.05);
     z-index: 100 !important;
 }
 
-.playable-row .card.selected {
-    transform: scale(0.82) translateY(-15px);
-}
-
-/* Non-playable row - dimmed, bottom */
-.non-playable-row {
-    padding: 4px 12px;
-    background: rgba(30, 41, 59, 0.5);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    min-height: calc(var(--hand-card-height) * 0.55 + 8px);
-}
-
-/* Non-playable cards even smaller */
-.non-playable-row .card {
-    transform: scale(0.55);
-    margin-right: calc(var(--hand-card-overlap) * 0.5);
-    opacity: 0.6;
-}
-
-.non-playable-row .card:last-child {
-    margin-right: 0;
-}
-
-.non-playable-row .card.disabled {
-    filter: brightness(0.7) saturate(0.3);
-    opacity: 0.5;
-}
-
-.non-playable-row .card.disabled:hover {
-    transform: scale(0.55);
-}
-
-/* Mobile adjustments for two-row mode */
-@media (max-width: 768px) {
-    #human-hand.two-row-mode {
-        height: calc(var(--hand-card-height) * 1.5 + 50px);
-        min-height: calc(var(--hand-card-height) * 1.5 + 50px);
-        gap: 6px;
-    }
-
-    .playable-row {
-        padding: 6px 12px;
-        min-height: calc(var(--hand-card-height) * 0.65 + 12px);
-    }
-
-    .playable-row::before {
-        font-size: 9px;
-        padding: 2px 10px;
-        top: -8px;
-    }
-
-    .playable-row .card {
-        transform: scale(0.7);
-        margin-right: calc(var(--hand-card-overlap) * 0.65);
-    }
-
-    .non-playable-row {
-        padding: 3px 10px;
-        min-height: calc(var(--hand-card-height) * 0.5 + 6px);
-    }
-
-    .non-playable-row .card {
-        transform: scale(0.5);
-        margin-right: calc(var(--hand-card-overlap) * 0.45);
-    }
-}
-
-@media (max-width: 480px) {
-    #human-hand.two-row-mode {
-        height: calc(var(--hand-card-height) * 1.4 + 45px);
-        min-height: calc(var(--hand-card-height) * 1.4 + 45px);
-        gap: 5px;
-    }
-
-    .playable-row {
-        padding: 5px 10px;
-        border-radius: 12px;
-        min-height: calc(var(--hand-card-height) * 0.6 + 10px);
-    }
-
-    .playable-row::before {
-        font-size: 8px;
-        padding: 2px 8px;
-        top: -7px;
-    }
-
-    .playable-row .card {
-        transform: scale(0.65);
-        margin-right: calc(var(--hand-card-overlap) * 0.6);
-    }
-
-    .non-playable-row {
-        padding: 2px 8px;
-        border-radius: 10px;
-        min-height: calc(var(--hand-card-height) * 0.45 + 4px);
-    }
-
-    .non-playable-row .card {
-        transform: scale(0.45);
-        margin-right: calc(var(--hand-card-overlap) * 0.4);
-    }
+.card.selected {
+    transform: translateY(-30px) scale(1.05);
+    z-index: 100 !important;
+    box-shadow: 0 0 15px var(--accent-gold);
 }
 
 /* Hand cards use larger size */
@@ -879,6 +761,7 @@ body {
         transform: translateY(20px) scale(0.9);
         opacity: 0;
     }
+
     to {
         transform: translateY(0) scale(1);
         opacity: 1;
@@ -893,7 +776,7 @@ body {
     background: linear-gradient(165deg, #ffffff 0%, #f8f9fa 80%, #e9ecef 100%);
     border-radius: var(--card-radius);
     box-shadow: var(--card-shadow);
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     position: relative;
     margin-right: var(--card-overlap);
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
@@ -960,6 +843,7 @@ body {
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
+
     .card,
     .card.keyboard-focus,
     .card.selected,
@@ -1046,6 +930,7 @@ body {
 .card.red .card-suit {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c51a1a'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E");
 }
+
 .card.black .card-suit {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23212529'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/%3E%3C/svg%3E");
 }
@@ -1053,6 +938,7 @@ body {
 .card[data-suit='D'] .card-suit {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c51a1a'%3E%3Cpath d='M12 2L2 12l10 10 10-10L12 2z'/%3E%3C/svg%3E");
 }
+
 .card[data-suit='S'] .card-suit {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23212529'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.84 14.15c-.45.45-1.05.7-1.68.7H11.5c-1.1 0-2-.9-2-2v-1.5c0-.41-.17-.79-.44-1.06C8.39 11.56 8 10.59 8 9.5c0-1.1.9-2 2-2h.5c.63 0 1.23-.25 1.68-.7C12.61 6.35 13.26 6 14 6c1.66 0 3 1.34 3 3 0 1.09-.44 2.07-1.16 2.85z'/%3E%3C/svg%3E");
 }

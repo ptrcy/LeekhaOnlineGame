@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "bun build.ts",
-    "serve": "bun --bun serve dist"
+    "start": "bun serve dist"
   },
   "dependencies": {}
 }
