@@ -6,6 +6,7 @@ import { BotAdapter } from './bot-adapter.js';
 import { LMBot as LMGBot } from '../tools/botsim/bots/LMG.js';
 import { LMBot as LMLMBot } from '../tools/botsim/bots/LMLM.js';
 import { LMBot as LMXBot } from '../tools/botsim/bots/LMX.js';
+import { LMBot as LMX2Bot } from '../tools/botsim/bots/lmx2.js';
 import { GameEvents } from './events.js';
 import {
     GAME_RULES,
@@ -137,7 +138,8 @@ export class GameState {
             const BOT_CLASSES = {
                 'lmg': LMGBot,
                 'lmlm': LMLMBot,
-                'lmx': LMXBot
+                'lmx': LMXBot,
+                'lmx2': LMX2Bot
             };
 
             for (const type of neededTypes) {
@@ -297,8 +299,15 @@ export class GameState {
             message: "Game On!"
         });
 
-        // Determine leader: Player to Right of Dealer leads first
-        let leader = (this.dealerIndex + 1) % 4;
+        // Determine leader: First round is random, subsequent rounds use dealer rule
+        let leader;
+        if (this.roundNumber === 1) {
+            // First round: random leader
+            leader = Math.floor(Math.random() * 4);
+        } else {
+            // Subsequent rounds: Player to Right of Dealer leads first
+            leader = (this.dealerIndex + 1) % 4;
+        }
 
         for (let trickNum = 0; trickNum < 13; trickNum++) {
             leader = await this.playTrick(leader);
