@@ -427,41 +427,17 @@ export class DOMRenderer extends GameRenderer {
     const el = document.createElement('div');
     el.className = `card ${card.color}`;
 
-    const suitIcons = { 'H': '♥', 'D': '♦', 'S': '♠', 'C': '♣' };
-    const suit = suitIcons[card.suit];
+    // Convert rank to SVG filename format (10 -> T)
+    const svgRank = card.rank === '10' ? 'T' : card.rank;
+    const svgFilename = `${svgRank}${card.suit}.svg`;
 
-    // Top-left corner
-    const topLeft = document.createElement('div');
-    topLeft.className = 'card-corner top-left';
-    const topRankSpan = document.createElement('span');
-    topRankSpan.className = 'card-rank';
-    topRankSpan.textContent = card.rank;
-    const topSuitSpan = document.createElement('span');
-    topSuitSpan.className = 'card-suit';
-    topSuitSpan.textContent = suit;
-    topLeft.appendChild(topRankSpan);
-    topLeft.appendChild(topSuitSpan);
+    const img = document.createElement('img');
+    img.src = `assets/cards/${svgFilename}`;
+    img.alt = `${card.rank} of ${SUIT_NAMES[card.suit]}`;
+    img.className = 'card-svg';
+    img.draggable = false;
 
-    // Center suit
-    const center = document.createElement('div');
-    center.className = 'card-center';
-    center.textContent = suit;
-
-    // Bottom-right corner
-    const bottomRight = document.createElement('div');
-    bottomRight.className = 'card-corner bottom-right';
-    const bottomRankSpan = document.createElement('span');
-    bottomRankSpan.className = 'card-rank';
-    bottomRankSpan.textContent = card.rank;
-    const bottomSuitSpan = document.createElement('span');
-    bottomSuitSpan.className = 'card-suit';
-    bottomSuitSpan.textContent = suit;
-    bottomRight.appendChild(bottomRankSpan);
-    bottomRight.appendChild(bottomSuitSpan);
-
-    el.appendChild(topLeft);
-    el.appendChild(center);
-    el.appendChild(bottomRight);
+    el.appendChild(img);
 
     return el;
   }
@@ -474,7 +450,7 @@ export class DOMRenderer extends GameRenderer {
   renderTrickCard(card, playerIndex) {
     const el = this.createCardElement(card);
 
-    // Use CSS classes for positioning (resolves CSP inline-style issues)
+    // Use CSS classes for positioning
     el.classList.add(`trick-pos-${playerIndex}`);
 
     this.elements.trickPile.appendChild(el);
@@ -511,11 +487,30 @@ export class DOMRenderer extends GameRenderer {
     const container = this.elements.humanHand;
     container.innerHTML = '';
 
+    const cardCount = humanHand.length;
+    const useArcLayout = cardCount > 8;
+
+    // Toggle arc layout class
+    container.classList.toggle('arc-layout', useArcLayout);
+
     humanHand.forEach((card, index) => {
       const el = this.createCardElement(card);
       el.dataset.index = index;
       el.dataset.suit = card.suit;
       el.dataset.rank = card.rank;
+
+      // Apply arc positioning when many cards
+      if (useArcLayout) {
+        const centerIndex = (cardCount - 1) / 2;
+        const distanceFromCenter = index - centerIndex;
+        // Max rotation spread: ~3 degrees per card from center
+        const rotation = distanceFromCenter * 3;
+        // Vertical offset creates the arc curve (parabolic)
+        const translateY = Math.abs(distanceFromCenter) * Math.abs(distanceFromCenter) * 2;
+        
+        el.style.setProperty('--arc-rotation', rotation);
+        el.style.setProperty('--arc-translate-y', `${translateY}px`);
+      }
 
       // Card click will be handled by enableCardSelection when appropriate
       container.appendChild(el);
@@ -599,14 +594,28 @@ export class DOMRenderer extends GameRenderer {
     // Single row mode - all cards in one row
     container.classList.remove('two-row-mode');
 
-    // Add help text to container aria-label
-    // ... (existing helper logic maintained via createSelectableCardElement)
+    // Arc layout for many cards
+    const cardCount = hand.length;
+    const useArcLayout = cardCount > 8;
+    container.classList.toggle('arc-layout', useArcLayout);
 
     hand.forEach((card, index) => {
       const isValid = validCards.some(
         c => c.suit === card.suit && c.rank === card.rank
       );
       const el = this.createSelectableCardElement(card, index, isValid, maxSelection);
+
+      // Apply arc positioning when many cards
+      if (useArcLayout) {
+        const centerIndex = (cardCount - 1) / 2;
+        const distanceFromCenter = index - centerIndex;
+        const rotation = distanceFromCenter * 3;
+        const translateY = Math.abs(distanceFromCenter) * Math.abs(distanceFromCenter) * 2;
+        
+        el.style.setProperty('--arc-rotation', rotation);
+        el.style.setProperty('--arc-translate-y', `${translateY}px`);
+      }
+
       container.appendChild(el);
     });
   }
@@ -825,15 +834,15 @@ export class DOMRenderer extends GameRenderer {
 
     // Animate each card toward the winner
     cards.forEach((card) => {
-      // Get current transform and add the collection offset
-      const currentTransform = card.style.transform;
-      // Extract the current translate values
-      const match = currentTransform.match(/translate\(calc\(-50% \+ ([-\d.]+)px\), calc\(-50% \+ ([-\d.]+)px\)\)/);
-
+      // Extract player index from trick-pos-X class to get original position
       let currentX = 0, currentY = 0;
-      if (match) {
-        currentX = parseFloat(match[1]);
-        currentY = parseFloat(match[2]);
+      for (let i = 0; i <= 3; i++) {
+        if (card.classList.contains(`trick-pos-${i}`)) {
+          const pos = CARD_DISPLAY.TRICK_POSITIONS[i];
+          currentX = pos.x;
+          currentY = pos.y;
+          break;
+        }
       }
 
       // Calculate new position (move toward winner)

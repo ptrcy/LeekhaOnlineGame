@@ -60,10 +60,10 @@
         --card-width: 60px;
         --card-height: 84px;
 
-        /* Hand cards - much bigger for interaction */
-        --hand-card-width: 75px;
-        --hand-card-height: 105px;
-        --hand-card-overlap: -45px;
+        /* Hand cards - 20% bigger for touch interaction */
+        --hand-card-width: 90px;
+        --hand-card-height: 126px;
+        --hand-card-overlap: -54px;
     }
 }
 
@@ -75,10 +75,10 @@
         --card-height: 70px;
         --card-radius: 6px;
 
-        /* Hand cards - still good size for tapping */
-        --hand-card-width: 68px;
-        --hand-card-height: 95px;
-        --hand-card-overlap: -42px;
+        /* Hand cards - 20% bigger for tapping */
+        --hand-card-width: 82px;
+        --hand-card-height: 114px;
+        --hand-card-overlap: -50px;
     }
 }
 
@@ -89,10 +89,10 @@
         --card-width: 45px;
         --card-height: 63px;
 
-        /* Hand cards - still usable */
-        --hand-card-width: 62px;
-        --hand-card-height: 87px;
-        --hand-card-overlap: -40px;
+        /* Hand cards - 20% bigger, still usable */
+        --hand-card-width: 74px;
+        --hand-card-height: 104px;
+        --hand-card-overlap: -48px;
     }
 }
 
@@ -436,30 +436,31 @@ body {
     position: absolute;
     left: 50%;
     top: 50%;
+    animation: none !important;
 }
 
 /* Trick Positions (Replacing inline styles) */
 /* Player 0 (Bottom/You): (0, 80) */
-.trick-pos-0 {
-    transform: translate(calc(-50% + 0px), calc(-50% + 80px)) rotate(0deg);
+#trick-pile .card.trick-pos-0 {
+    transform: translate(calc(-50% + 0px), calc(-50% + 80px)) rotate(0deg) !important;
     z-index: 1;
 }
 
 /* Player 1 (Right): (80, 0, 5deg) */
-.trick-pos-1 {
-    transform: translate(calc(-50% + 80px), calc(-50% + 0px)) rotate(5deg);
+#trick-pile .card.trick-pos-1 {
+    transform: translate(calc(-50% + 80px), calc(-50% + 0px)) rotate(5deg) !important;
     z-index: 2;
 }
 
 /* Player 2 (Top): (0, -80) */
-.trick-pos-2 {
-    transform: translate(calc(-50% + 0px), calc(-50% - 80px)) rotate(0deg);
+#trick-pile .card.trick-pos-2 {
+    transform: translate(calc(-50% + 0px), calc(-50% - 80px)) rotate(0deg) !important;
     z-index: 3;
 }
 
 /* Player 3 (Left): (-80, 0, -5deg) */
-.trick-pos-3 {
-    transform: translate(calc(-50% - 80px), calc(-50% + 0px)) rotate(-5deg);
+#trick-pile .card.trick-pos-3 {
+    transform: translate(calc(-50% - 80px), calc(-50% + 0px)) rotate(-5deg) !important;
     z-index: 4;
 }
 
@@ -756,6 +757,57 @@ body {
     }
 }
 
+/* Arc Layout for many cards - applied via JS when >8 cards */
+#human-hand.arc-layout {
+    overflow: visible;
+    padding-bottom: 20px;
+}
+
+#human-hand.arc-layout .card {
+    position: relative;
+    transform-origin: bottom center;
+    /* These values are set by JavaScript:
+       --arc-rotation: rotation angle in degrees
+       --arc-translate-y: vertical offset */
+    transform: rotate(calc(var(--arc-rotation, 0) * 1deg)) translateY(var(--arc-translate-y, 0px));
+    margin-right: calc(var(--hand-card-overlap) + 5px);
+    transition: transform 0.15s ease-out;
+}
+
+#human-hand.arc-layout .card:hover:not(.disabled) {
+    transform: rotate(calc(var(--arc-rotation, 0) * 1deg)) translateY(calc(var(--arc-translate-y, 0px) - 25px)) scale(1.08);
+    z-index: 100 !important;
+}
+
+#human-hand.arc-layout .card.selected {
+    transform: rotate(calc(var(--arc-rotation, 0) * 1deg)) translateY(calc(var(--arc-translate-y, 0px) - 35px)) scale(1.08);
+    z-index: 100 !important;
+}
+
+/* Tighter arc on mobile */
+@media (max-width: 768px) {
+    #human-hand.arc-layout {
+        height: calc(var(--hand-card-height) + 50px);
+        min-height: calc(var(--hand-card-height) + 50px);
+        padding-bottom: 15px;
+    }
+    
+    #human-hand.arc-layout .card {
+        margin-right: calc(var(--hand-card-overlap) + 8px);
+    }
+}
+
+@media (max-width: 480px) {
+    #human-hand.arc-layout {
+        height: calc(var(--hand-card-height) + 45px);
+        min-height: calc(var(--hand-card-height) + 45px);
+    }
+    
+    #human-hand.arc-layout .card {
+        margin-right: calc(var(--hand-card-overlap) + 10px);
+    }
+}
+
 @keyframes float-in {
     from {
         transform: translateY(20px) scale(0.9);
@@ -773,23 +825,29 @@ body {
     height: var(--card-height);
     min-width: var(--card-width);
     flex-shrink: 0;
-    background: linear-gradient(165deg, #ffffff 0%, #f8f9fa 80%, #e9ecef 100%);
+    background: transparent;
     border-radius: var(--card-radius);
     box-shadow: var(--card-shadow);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: none;
     position: relative;
     margin-right: var(--card-overlap);
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
     cursor: pointer;
     z-index: 1;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 6px;
-    font-family: 'Playfair Display', serif;
-    font-weight: 700;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
     overflow: hidden;
     animation: float-in 0.5s ease-out forwards;
+}
+
+.card-svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: var(--card-radius);
+    pointer-events: none;
 }
 
 .card::before {
