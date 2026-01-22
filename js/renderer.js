@@ -60,6 +60,7 @@ export class DOMRenderer extends GameRenderer {
       trickPile: null,
       passModal: null,
       confirmPassBtn: null,
+      passCount: null,
       scoreboard: null,
       scoresList: null,
       gameOverModal: null,
@@ -87,6 +88,14 @@ export class DOMRenderer extends GameRenderer {
   }
 
   /**
+   * Check if we're on a mobile device (used to disable arc layout)
+   * @returns {boolean}
+   */
+  isMobile() {
+    return window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  /**
    * Initialize DOM elements and event subscriptions
    */
   initialize() {
@@ -96,6 +105,7 @@ export class DOMRenderer extends GameRenderer {
     this.elements.trickPile = document.getElementById('trick-pile');
     this.elements.passModal = document.getElementById('pass-modal');
     this.elements.confirmPassBtn = document.getElementById('confirm-pass-btn');
+    this.elements.passCount = document.getElementById('pass-count');
     this.elements.scoreboard = document.getElementById('scoreboard');
     this.elements.scoresList = document.getElementById('scores-list');
     this.elements.gameOverModal = document.getElementById('game-over-modal');
@@ -266,8 +276,11 @@ export class DOMRenderer extends GameRenderer {
         }
       }
 
-      // Update button state
+      // Update button state and count display
       this.elements.confirmPassBtn.disabled = (this.selectedCards.size !== 3);
+      if (this.elements.passCount) {
+        this.elements.passCount.textContent = this.selectedCards.size;
+      }
     } else if (this.selectionMode === 'play') {
       // Single selection for playing
       this.inputController.handleCardClick(card);
@@ -488,7 +501,8 @@ export class DOMRenderer extends GameRenderer {
     container.innerHTML = '';
 
     const cardCount = humanHand.length;
-    const useArcLayout = cardCount > 8;
+    // Disable arc layout on mobile for better space utilization
+    const useArcLayout = cardCount > 8 && !this.isMobile();
 
     // Toggle arc layout class
     container.classList.toggle('arc-layout', useArcLayout);
@@ -499,7 +513,7 @@ export class DOMRenderer extends GameRenderer {
       el.dataset.suit = card.suit;
       el.dataset.rank = card.rank;
 
-      // Apply arc positioning when many cards
+      // Apply arc positioning when many cards (desktop only)
       if (useArcLayout) {
         const centerIndex = (cardCount - 1) / 2;
         const distanceFromCenter = index - centerIndex;
@@ -541,9 +555,12 @@ export class DOMRenderer extends GameRenderer {
     });
 
     if (mode === 'pass') {
-      // Show pass modal
+      // Show pass indicator
       this.elements.passModal.classList.remove('hidden');
       this.elements.confirmPassBtn.disabled = true;
+      if (this.elements.passCount) {
+        this.elements.passCount.textContent = '0';
+      }
 
       // Render hand with selection enabled
       this.renderHandsWithSelection(hand, hand, count || 3);
@@ -594,9 +611,9 @@ export class DOMRenderer extends GameRenderer {
     // Single row mode - all cards in one row
     container.classList.remove('two-row-mode');
 
-    // Arc layout for many cards
+    // Arc layout for many cards (disabled on mobile)
     const cardCount = hand.length;
-    const useArcLayout = cardCount > 8;
+    const useArcLayout = cardCount > 8 && !this.isMobile();
     container.classList.toggle('arc-layout', useArcLayout);
 
     hand.forEach((card, index) => {
@@ -605,7 +622,7 @@ export class DOMRenderer extends GameRenderer {
       );
       const el = this.createSelectableCardElement(card, index, isValid, maxSelection);
 
-      // Apply arc positioning when many cards
+      // Apply arc positioning when many cards (desktop only)
       if (useArcLayout) {
         const centerIndex = (cardCount - 1) / 2;
         const distanceFromCenter = index - centerIndex;
@@ -664,8 +681,11 @@ export class DOMRenderer extends GameRenderer {
           }
         }
 
-        // Update button state
+        // Update button state and count display
         this.elements.confirmPassBtn.disabled = (this.selectedCards.size !== maxSelection);
+        if (this.elements.passCount) {
+          this.elements.passCount.textContent = this.selectedCards.size;
+        }
       } else if (this.selectionMode === 'play') {
         // Single selection for playing
         this.inputController.handleCardClick(card);
@@ -717,6 +737,9 @@ export class DOMRenderer extends GameRenderer {
     if (show) {
       this.elements.passModal.classList.remove('hidden');
       this.elements.confirmPassBtn.disabled = !enabled;
+      if (this.elements.passCount) {
+        this.elements.passCount.textContent = '0';
+      }
     } else {
       this.elements.passModal.classList.add('hidden');
       this.selectedCards.clear();

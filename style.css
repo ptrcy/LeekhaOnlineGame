@@ -49,21 +49,21 @@
         /* Hand cards - bigger */
         --hand-card-width: 80px;
         --hand-card-height: 112px;
-        --hand-card-overlap: -48px;
+        --hand-card-overlap: -53px;
     }
 }
 
-/* Mobile Adjustments */
+/* Mobile Adjustments - 2/3 overlap for better space use */
 @media (max-width: 768px) {
     :root {
         /* Trick cards - smaller for center */
         --card-width: 60px;
         --card-height: 84px;
 
-        /* Hand cards - 20% bigger for touch interaction */
+        /* Hand cards - 2/3 overlap (shows 1/3 of each card) */
         --hand-card-width: 90px;
         --hand-card-height: 126px;
-        --hand-card-overlap: -54px;
+        --hand-card-overlap: -60px;
     }
 }
 
@@ -75,10 +75,10 @@
         --card-height: 70px;
         --card-radius: 6px;
 
-        /* Hand cards - 20% bigger for tapping */
+        /* Hand cards - 2/3 overlap */
         --hand-card-width: 82px;
         --hand-card-height: 114px;
-        --hand-card-overlap: -50px;
+        --hand-card-overlap: -55px;
     }
 }
 
@@ -89,10 +89,10 @@
         --card-width: 45px;
         --card-height: 63px;
 
-        /* Hand cards - 20% bigger, still usable */
+        /* Hand cards - 2/3 overlap */
         --hand-card-width: 74px;
         --hand-card-height: 104px;
-        --hand-card-overlap: -48px;
+        --hand-card-overlap: -49px;
     }
 }
 
@@ -1152,13 +1152,91 @@ body {
     line-height: 1.6;
 }
 
+/* Pass Indicator - Arrow pointing left */
 #pass-modal {
     position: absolute;
-    top: 40%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 400px;
+    top: 50%;
+    left: 50px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: var(--z-modal);
+}
+
+.pass-arrow-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.pass-arrow {
+    width: 80px;
+    height: 80px;
+    animation: pulse-arrow 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+}
+
+@keyframes pulse-arrow {
+    0%, 100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    50% {
+        transform: translateX(-8px);
+        opacity: 0.7;
+    }
+}
+
+.pass-label {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+#pass-modal #confirm-pass-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+#pass-modal #confirm-pass-btn svg {
+    width: 24px;
+    height: 24px;
+    color: #1e293b;
+}
+
+#pass-modal #confirm-pass-btn:disabled {
+    background: var(--glass-bg);
+    cursor: not-allowed;
+    opacity: 0.4;
+    box-shadow: none;
+}
+
+#pass-modal #confirm-pass-btn:disabled svg {
+    color: var(--text-muted);
+}
+
+#pass-modal #confirm-pass-btn:not(:disabled):hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+}
+
+#pass-modal #confirm-pass-btn:not(:disabled):active {
+    transform: scale(0.95);
 }
 
 @media (max-width: 768px) {
@@ -1176,8 +1254,26 @@ body {
     }
 
     #pass-modal {
-        width: 92%;
-        max-width: 350px;
+        left: 15px;
+    }
+
+    .pass-arrow {
+        width: 60px;
+        height: 60px;
+    }
+
+    .pass-label {
+        font-size: 12px;
+    }
+
+    #pass-modal #confirm-pass-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    #pass-modal #confirm-pass-btn svg {
+        width: 20px;
+        height: 20px;
     }
 }
 
@@ -1197,9 +1293,28 @@ body {
     }
 
     #pass-modal {
-        width: 95%;
-        max-width: 320px;
-        top: 35%;
+        left: 10px;
+        gap: 8px;
+    }
+
+    .pass-arrow {
+        width: 50px;
+        height: 50px;
+    }
+
+    .pass-label {
+        font-size: 11px;
+        letter-spacing: 1px;
+    }
+
+    #pass-modal #confirm-pass-btn {
+        width: 36px;
+        height: 36px;
+    }
+
+    #pass-modal #confirm-pass-btn svg {
+        width: 18px;
+        height: 18px;
     }
 }
 
@@ -1303,10 +1418,10 @@ button:disabled {
         --card-width: 48px;
         --card-height: 67px;
 
-        /* Hand cards - bigger for touch */
+        /* Hand cards - 2/3 overlap */
         --hand-card-width: 62px;
         --hand-card-height: 87px;
-        --hand-card-overlap: -38px;
+        --hand-card-overlap: -41px;
     }
 
     .top {

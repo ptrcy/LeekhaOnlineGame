@@ -41,11 +41,29 @@
 
             <div id="notification-area" role="log" aria-live="polite" aria-label="Game notifications"></div>
 
-            <div id="pass-modal" class="modal hidden" role="dialog" aria-modal="true"
-                aria-labelledby="pass-modal-title">
-                <h2 id="pass-modal-title">Pass 3 Cards</h2>
-                <p id="pass-modal-desc">Select 3 cards to pass to your Left.</p>
-                <button id="confirm-pass-btn" disabled aria-describedby="pass-modal-desc">Pass Cards</button>
+            <div id="pass-modal" class="hidden" role="status" aria-live="polite">
+                <div class="pass-arrow-container">
+                    <svg class="pass-arrow" viewBox="0 0 64 64" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="arrow-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#fbbf24"/>
+                                <stop offset="100%" stop-color="#f59e0b"/>
+                            </linearGradient>
+                            <filter id="arrow-glow">
+                                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <path d="M44 12 L20 32 L44 52" stroke="url(#arrow-gradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#arrow-glow)"/>
+                    </svg>
+                    <span class="pass-label">Pass <span id="pass-count">0</span>/3</span>
+                </div>
+                <button id="confirm-pass-btn" disabled aria-label="Confirm pass selection">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"/></svg>
+                </button>
             </div>
         </div>
 
@@ -62,7 +80,7 @@
                 <div class="avatar-container">
                     <div class="avatar bot"></div>
                     <div class="player-info">
-                        <span class="name">Partner Pat</span>
+                        <span class="name">Pat</span>
                         <div class="hand-summary" data-player-index="2">0 pts</div>
                     </div>
                 </div>
