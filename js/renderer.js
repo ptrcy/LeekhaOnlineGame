@@ -58,8 +58,7 @@ export class DOMRenderer extends GameRenderer {
       status: null,
       humanHand: null,
       trickPile: null,
-      passModal: null,
-      confirmPassBtn: null,
+      passModal: null,  // This is now also the confirm button
       passCount: null,
       scoreboard: null,
       scoresList: null,
@@ -158,7 +157,6 @@ export class DOMRenderer extends GameRenderer {
     this.elements.humanHand = document.getElementById('human-hand');
     this.elements.trickPile = document.getElementById('trick-pile');
     this.elements.passModal = document.getElementById('pass-modal');
-    this.elements.confirmPassBtn = document.getElementById('confirm-pass-btn');
     this.elements.passCount = document.getElementById('pass-count');
     this.elements.scoreboard = document.getElementById('scoreboard');
     this.elements.scoresList = document.getElementById('scores-list');
@@ -173,7 +171,8 @@ export class DOMRenderer extends GameRenderer {
     this.subscribeToEvents();
 
     // Setup pass confirmation button
-    this.elements.confirmPassBtn.onclick = () => {
+    // Pass modal is now a clickable button
+    this.elements.passModal.onclick = () => {
       // Convert selected card keys back to card objects
       const selectedCardObjects = Array.from(this.selectedCards).map(key => {
         return this.currentHand.find(c => `${c.suit}${c.rank}` === key);
@@ -331,7 +330,7 @@ export class DOMRenderer extends GameRenderer {
       }
 
       // Update button state and count display
-      this.elements.confirmPassBtn.disabled = (this.selectedCards.size !== 3);
+      this.elements.passModal.disabled = (this.selectedCards.size !== 3);
       if (this.elements.passCount) {
         this.elements.passCount.textContent = this.selectedCards.size;
       }
@@ -614,7 +613,7 @@ export class DOMRenderer extends GameRenderer {
     if (mode === 'pass') {
       // Show pass indicator
       this.elements.passModal.classList.remove('hidden');
-      this.elements.confirmPassBtn.disabled = true;
+      this.elements.passModal.disabled = true;
       if (this.elements.passCount) {
         this.elements.passCount.textContent = '0';
       }
@@ -742,7 +741,7 @@ export class DOMRenderer extends GameRenderer {
         }
 
         // Update button state and count display
-        this.elements.confirmPassBtn.disabled = (this.selectedCards.size !== maxSelection);
+        this.elements.passModal.disabled = (this.selectedCards.size !== maxSelection);
         if (this.elements.passCount) {
           this.elements.passCount.textContent = this.selectedCards.size;
         }
@@ -796,7 +795,7 @@ export class DOMRenderer extends GameRenderer {
   showPassModal(show, enabled) {
     if (show) {
       this.elements.passModal.classList.remove('hidden');
-      this.elements.confirmPassBtn.disabled = !enabled;
+      this.elements.passModal.disabled = !enabled;
       if (this.elements.passCount) {
         this.elements.passCount.textContent = '0';
       }

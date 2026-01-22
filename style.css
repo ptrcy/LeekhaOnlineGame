@@ -1162,32 +1162,53 @@ body {
     line-height: 1.6;
 }
 
-/* Pass Indicator - Arrow pointing left, centered on table */
+/* Pass Indicator - Clickable arrow button, centered on table */
 #pass-modal {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 20px;
-    z-index: var(--z-modal);
-    cursor: pointer;
-}
-
-.pass-arrow-container {
-    display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    z-index: var(--z-modal);
+    cursor: pointer;
+    background: rgba(30, 41, 59, 0.9);
+    border: 2px solid var(--accent-primary);
+    border-radius: 16px;
+    padding: 20px 30px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
+}
+
+#pass-modal:disabled {
+    opacity: 0.6;
+    cursor: default;
+    border-color: var(--glass-border);
+    box-shadow: none;
+}
+
+#pass-modal:not(:disabled):hover {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.4);
+    border-color: var(--accent-secondary);
+}
+
+#pass-modal:not(:disabled):active {
+    transform: translate(-50%, -50%) scale(0.98);
 }
 
 .pass-arrow {
-    width: 120px;
-    height: 120px;
+    width: 100px;
+    height: 100px;
     animation: pulse-arrow 1.5s ease-in-out infinite;
     filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.6));
+}
+
+#pass-modal:disabled .pass-arrow {
+    filter: grayscale(50%) opacity(0.5);
+    animation: none;
 }
 
 @keyframes pulse-arrow {
@@ -1197,57 +1218,22 @@ body {
     }
     50% {
         transform: translateX(-8px);
-        opacity: 0.7;
+        opacity: 0.8;
     }
 }
 
 .pass-label {
     font-family: 'Cinzel', serif;
-    font-size: 18px;
+    font-size: 16px;
     color: var(--accent-primary);
     text-transform: uppercase;
     letter-spacing: 2px;
     text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
 }
 
-#pass-modal #confirm-pass-btn {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
-}
-
-#pass-modal #confirm-pass-btn svg {
-    width: 32px;
-    height: 32px;
-    color: #1e293b;
-}
-
-#pass-modal #confirm-pass-btn:disabled {
-    background: var(--glass-bg);
-    cursor: not-allowed;
-    opacity: 0.4;
-    box-shadow: none;
-}
-
-#pass-modal #confirm-pass-btn:disabled svg {
+#pass-modal:disabled .pass-label {
     color: var(--text-muted);
-}
-
-#pass-modal #confirm-pass-btn:not(:disabled):hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
-}
-
-#pass-modal #confirm-pass-btn:not(:disabled):active {
-    transform: scale(0.95);
+    text-shadow: none;
 }
 
 @media (max-width: 768px) {
@@ -1264,23 +1250,18 @@ body {
         font-size: 14px;
     }
 
+    #pass-modal {
+        padding: 15px 20px;
+        border-radius: 12px;
+    }
+
     .pass-arrow {
-        width: 90px;
-        height: 90px;
+        width: 80px;
+        height: 80px;
     }
 
     .pass-label {
         font-size: 14px;
-    }
-
-    #pass-modal #confirm-pass-btn {
-        width: 50px;
-        height: 50px;
-    }
-
-    #pass-modal #confirm-pass-btn svg {
-        width: 26px;
-        height: 26px;
     }
 }
 
@@ -1300,27 +1281,19 @@ body {
     }
 
     #pass-modal {
-        gap: 12px;
+        padding: 12px 16px;
+        gap: 8px;
+        border-radius: 10px;
     }
 
     .pass-arrow {
-        width: 70px;
-        height: 70px;
+        width: 60px;
+        height: 60px;
     }
 
     .pass-label {
         font-size: 12px;
         letter-spacing: 1px;
-    }
-
-    #pass-modal #confirm-pass-btn {
-        width: 44px;
-        height: 44px;
-    }
-
-    #pass-modal #confirm-pass-btn svg {
-        width: 22px;
-        height: 22px;
     }
 }
 
