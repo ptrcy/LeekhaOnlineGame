@@ -713,6 +713,16 @@ body {
     margin-right: var(--hand-card-overlap);
 }
 
+/* Dynamic overlap for mobile - uses full width */
+#human-hand.dynamic-overlap .card {
+    margin-right: var(--dynamic-overlap, var(--hand-card-overlap));
+}
+
+/* Center cards when at minimum overlap (extra space available) */
+#human-hand.centered-cards {
+    justify-content: center;
+}
+
 #human-hand::-webkit-scrollbar {
     height: 6px;
 }

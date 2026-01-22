@@ -96,6 +96,60 @@ export class DOMRenderer extends GameRenderer {
   }
 
   /**
+   * Calculate and apply dynamic card overlap for mobile to use full width
+   * Overlap ranges from 0.5 (50%) to 0.666 (66.6%)
+   * At 0.5 overlap, cards are centered
+   * @param {HTMLElement} container - The hand container
+   * @param {number} cardCount - Number of cards
+   */
+  applyMobileCardLayout(container, cardCount) {
+    if (!this.isMobile() || cardCount === 0) {
+      container.style.removeProperty('--dynamic-overlap');
+      container.classList.remove('dynamic-overlap', 'centered-cards');
+      return;
+    }
+
+    // Get computed card width from CSS
+    const computedStyle = getComputedStyle(document.documentElement);
+    const cardWidth = parseFloat(computedStyle.getPropertyValue('--hand-card-width')) || 82;
+    
+    // Available width (container width with some padding)
+    const containerWidth = container.offsetWidth || window.innerWidth * 0.95;
+    const availableWidth = containerWidth - 10; // Small padding
+    
+    // Calculate optimal overlap ratio
+    // Formula: totalWidth = cardWidth + (cardCount - 1) * cardWidth * (1 - overlapRatio)
+    // Solving for overlapRatio: overlapRatio = 1 - (availableWidth - cardWidth) / ((cardCount - 1) * cardWidth)
+    
+    const minOverlap = 0.5;   // 50% overlap minimum (shows half of each card)
+    const maxOverlap = 0.666; // 66.6% overlap maximum (shows 1/3 of each card)
+    
+    let overlapRatio;
+    if (cardCount <= 1) {
+      overlapRatio = 0;
+    } else {
+      // Calculate what overlap would fit all cards in available width
+      overlapRatio = 1 - (availableWidth - cardWidth) / ((cardCount - 1) * cardWidth);
+      // Clamp between min and max
+      overlapRatio = Math.max(minOverlap, Math.min(maxOverlap, overlapRatio));
+    }
+    
+    // Calculate the negative margin (overlap in pixels)
+    const overlapPx = -(cardWidth * overlapRatio);
+    
+    // Apply dynamic overlap
+    container.style.setProperty('--dynamic-overlap', `${overlapPx}px`);
+    container.classList.add('dynamic-overlap');
+    
+    // Center cards if at minimum overlap (0.5) - meaning we have extra space
+    if (overlapRatio <= minOverlap + 0.01) {
+      container.classList.add('centered-cards');
+    } else {
+      container.classList.remove('centered-cards');
+    }
+  }
+
+  /**
    * Initialize DOM elements and event subscriptions
    */
   initialize() {
@@ -529,6 +583,9 @@ export class DOMRenderer extends GameRenderer {
       // Card click will be handled by enableCardSelection when appropriate
       container.appendChild(el);
     });
+
+    // Apply dynamic overlap on mobile
+    this.applyMobileCardLayout(container, cardCount);
   }
 
   /**
@@ -635,6 +692,9 @@ export class DOMRenderer extends GameRenderer {
 
       container.appendChild(el);
     });
+
+    // Apply dynamic overlap on mobile
+    this.applyMobileCardLayout(container, cardCount);
   }
 
   /**
