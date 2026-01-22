@@ -1152,31 +1152,32 @@ body {
     line-height: 1.6;
 }
 
-/* Pass Indicator - Arrow pointing left */
+/* Pass Indicator - Arrow pointing left, centered on table */
 #pass-modal {
     position: absolute;
     top: 50%;
-    left: 50px;
-    transform: translateY(-50%);
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 12px;
+    gap: 20px;
     z-index: var(--z-modal);
+    cursor: pointer;
 }
 
 .pass-arrow-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .pass-arrow {
-    width: 80px;
-    height: 80px;
+    width: 120px;
+    height: 120px;
     animation: pulse-arrow 1.5s ease-in-out infinite;
-    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+    filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.6));
 }
 
 @keyframes pulse-arrow {
@@ -1192,7 +1193,7 @@ body {
 
 .pass-label {
     font-family: 'Cinzel', serif;
-    font-size: 14px;
+    font-size: 18px;
     color: var(--accent-primary);
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -1200,8 +1201,8 @@ body {
 }
 
 #pass-modal #confirm-pass-btn {
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
     border: none;
@@ -1214,8 +1215,8 @@ body {
 }
 
 #pass-modal #confirm-pass-btn svg {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     color: #1e293b;
 }
 
@@ -1253,27 +1254,23 @@ body {
         font-size: 14px;
     }
 
-    #pass-modal {
-        left: 15px;
-    }
-
     .pass-arrow {
-        width: 60px;
-        height: 60px;
+        width: 90px;
+        height: 90px;
     }
 
     .pass-label {
-        font-size: 12px;
+        font-size: 14px;
     }
 
     #pass-modal #confirm-pass-btn {
-        width: 40px;
-        height: 40px;
+        width: 50px;
+        height: 50px;
     }
 
     #pass-modal #confirm-pass-btn svg {
-        width: 20px;
-        height: 20px;
+        width: 26px;
+        height: 26px;
     }
 }
 
@@ -1293,28 +1290,27 @@ body {
     }
 
     #pass-modal {
-        left: 10px;
-        gap: 8px;
+        gap: 12px;
     }
 
     .pass-arrow {
-        width: 50px;
-        height: 50px;
+        width: 70px;
+        height: 70px;
     }
 
     .pass-label {
-        font-size: 11px;
+        font-size: 12px;
         letter-spacing: 1px;
     }
 
     #pass-modal #confirm-pass-btn {
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
     }
 
     #pass-modal #confirm-pass-btn svg {
-        width: 18px;
-        height: 18px;
+        width: 22px;
+        height: 22px;
     }
 }
 
