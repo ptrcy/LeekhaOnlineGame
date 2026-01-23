@@ -20,6 +20,11 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap"
         rel="stylesheet">
+
+    <!-- Legacy globals (must load before module bundle) -->
+    <script src="/js/error-handling.js" defer></script>
+    <script src="/js/riffwave.js" defer></script>
+    <script src="/js/sfxr.js" defer></script>
 </head>
 
 <body>
@@ -127,13 +132,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Error Handling Script -->
-    <script src="/js/error-handling.js" defer></script>
-
-    <!-- Audio Scripts -->
-    <script src="/js/riffwave.js" defer></script>
-    <script src="/js/sfxr.js" defer></script>
 
     <!-- Scripts -->
     <script type="module" src="main.js"></script>
