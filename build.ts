@@ -5,19 +5,30 @@
  * Bundles JS and copies static assets to dist/
  */
 
-import { rmSync, mkdirSync, cpSync, existsSync } from 'fs';
+import { rmSync, mkdirSync, cpSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
 const DIST_DIR = 'dist';
 const ROOT = import.meta.dir;
 
-// Clean and create dist directory
+// Clean dist directory by deleting its contents (not the folder itself)
 function cleanDist() {
     if (existsSync(DIST_DIR)) {
-        rmSync(DIST_DIR, { recursive: true });
+        // Delete all contents of dist/ folder
+        const files = readdirSync(DIST_DIR);
+        for (const file of files) {
+            const filePath = join(DIST_DIR, file);
+            const stat = statSync(filePath);
+            if (stat.isDirectory()) {
+                rmSync(filePath, { recursive: true });
+            } else {
+                rmSync(filePath);
+            }
+        }
+        console.log('✓ Cleaned dist/');
+    } else {
+        mkdirSync(DIST_DIR);
     }
-    mkdirSync(DIST_DIR);
-    console.log('✓ Cleaned dist/');
 }
 
 // Bundle JavaScript with Bun

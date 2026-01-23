@@ -304,6 +304,7 @@ export class GameState {
         if (this.roundNumber === 1) {
             // First round: random leader
             leader = Math.floor(Math.random() * 4);
+            console.log(`[DEBUG] Round 1: Random leader selected = Player ${leader} (${this.players[leader].name})`);
         } else {
             // Subsequent rounds: Player to Right of Dealer leads first
             leader = (this.dealerIndex + 1) % 4;
