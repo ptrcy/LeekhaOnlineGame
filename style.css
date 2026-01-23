@@ -1016,11 +1016,6 @@ body {
         transform: translateY(-12px) scale(1.03);
     }
 
-    .card.selected {
-        transform: translateY(-15px);
-        box-shadow: var(--card-shadow);
-    }
-
     #human-hand .card {
         padding: 5px;
     }
@@ -1030,7 +1025,8 @@ body {
     }
 
     #human-hand .card.selected {
-        transform: translateY(-15px);
+        transform: translateY(-15px) !important;
+        box-shadow: var(--card-shadow) !important;
     }
 }
 
