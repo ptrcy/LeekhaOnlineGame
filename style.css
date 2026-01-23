@@ -631,7 +631,6 @@ body {
         top: 35%;
         transition: opacity 0.3s ease;
     }
-}
 
     .avatar {
         width: 35px !important;
@@ -814,18 +813,6 @@ body {
     }
 }
 
-@keyframes float-in {
-    from {
-        transform: translateY(20px) scale(0.9);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-}
-
 .card {
     width: var(--card-width);
     height: var(--card-height);
@@ -845,7 +832,7 @@ body {
     justify-content: center;
     padding: 0;
     overflow: hidden;
-    animation: float-in 0.5s ease-out forwards;
+    animation: none;
 }
 
 .card-svg {

@@ -4,8 +4,12 @@
   "description": "Leekha (Likha) Online Card Game",
   "type": "module",
   "scripts": {
-    "build": "bun build.ts",
-    "start": "bun serve dist",
-    "dev": "bun serve ."
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "start": "vite preview --host"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
   }
 }

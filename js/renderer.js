@@ -498,13 +498,14 @@ export class DOMRenderer extends GameRenderer {
   createCardElement(card) {
     const el = document.createElement('div');
     el.className = `card ${card.color}`;
+    el.dataset.key = `${card.suit}${card.rank}`;
 
     // Convert rank to SVG filename format (10 -> T)
     const svgRank = card.rank === '10' ? 'T' : card.rank;
     const svgFilename = `${svgRank}${card.suit}.svg`;
 
     const img = document.createElement('img');
-    img.src = `assets/cards/${svgFilename}`;
+    img.src = `/cards/${svgFilename}`;
     img.alt = `${card.rank} of ${SUIT_NAMES[card.suit]}`;
     img.className = 'card-svg';
     img.draggable = false;
@@ -557,19 +558,42 @@ export class DOMRenderer extends GameRenderer {
     this.lastRenderedHandKey = handKey;
 
     const container = this.elements.humanHand;
-    container.innerHTML = '';
+    container.removeAttribute('role');
+    container.removeAttribute('aria-label');
+    container.removeAttribute('aria-multiselectable');
+
+    const existing = new Map();
+    container.querySelectorAll('.card').forEach((cardEl) => {
+      const key = cardEl.dataset.key || `${cardEl.dataset.suit || ''}${cardEl.dataset.rank || ''}`;
+      if (key) {
+        cardEl.dataset.key = key;
+        existing.set(key, cardEl);
+      }
+    });
 
     const cardCount = humanHand.length;
+    const fragment = document.createDocumentFragment();
 
     humanHand.forEach((card, index) => {
-      const el = this.createCardElement(card);
+      const key = `${card.suit}${card.rank}`;
+      const el = existing.get(key) || this.createCardElement(card);
       el.dataset.index = index;
       el.dataset.suit = card.suit;
       el.dataset.rank = card.rank;
+      el.dataset.key = key;
+      el.onclick = null;
+      el.classList.remove('disabled', 'selected', 'keyboard-focus');
+      el.removeAttribute('role');
+      el.removeAttribute('aria-label');
+      el.removeAttribute('aria-selected');
+      el.removeAttribute('aria-disabled');
+      el.removeAttribute('tabindex');
 
       // Card click will be handled by enableCardSelection when appropriate
-      container.appendChild(el);
+      fragment.appendChild(el);
     });
+
+    container.replaceChildren(fragment);
 
     // Apply dynamic overlap on mobile
     this.applyMobileCardLayout(container, cardCount);
