@@ -87,7 +87,7 @@ export class DOMRenderer extends GameRenderer {
   }
 
   /**
-   * Check if we're on a mobile device (used to disable arc layout)
+   * Check if we're on a mobile device
    * @returns {boolean}
    */
   isMobile() {
@@ -560,30 +560,12 @@ export class DOMRenderer extends GameRenderer {
     container.innerHTML = '';
 
     const cardCount = humanHand.length;
-    // Disable arc layout on mobile for better space utilization
-    const useArcLayout = cardCount > 8 && !this.isMobile();
-
-    // Toggle arc layout class
-    container.classList.toggle('arc-layout', useArcLayout);
 
     humanHand.forEach((card, index) => {
       const el = this.createCardElement(card);
       el.dataset.index = index;
       el.dataset.suit = card.suit;
       el.dataset.rank = card.rank;
-
-      // Apply arc positioning when many cards (desktop only)
-      if (useArcLayout) {
-        const centerIndex = (cardCount - 1) / 2;
-        const distanceFromCenter = index - centerIndex;
-        // Max rotation spread: ~3 degrees per card from center
-        const rotation = distanceFromCenter * 3;
-        // Vertical offset creates the arc curve (parabolic)
-        const translateY = Math.abs(distanceFromCenter) * Math.abs(distanceFromCenter) * 2;
-        
-        el.style.setProperty('--arc-rotation', rotation);
-        el.style.setProperty('--arc-translate-y', `${translateY}px`);
-      }
 
       // Card click will be handled by enableCardSelection when appropriate
       container.appendChild(el);
@@ -673,27 +655,13 @@ export class DOMRenderer extends GameRenderer {
     // Single row mode - all cards in one row
     container.classList.remove('two-row-mode');
 
-    // Arc layout for many cards (disabled on mobile)
     const cardCount = hand.length;
-    const useArcLayout = cardCount > 8 && !this.isMobile();
-    container.classList.toggle('arc-layout', useArcLayout);
 
     hand.forEach((card, index) => {
       const isValid = validCards.some(
         c => c.suit === card.suit && c.rank === card.rank
       );
       const el = this.createSelectableCardElement(card, index, isValid, maxSelection);
-
-      // Apply arc positioning when many cards (desktop only)
-      if (useArcLayout) {
-        const centerIndex = (cardCount - 1) / 2;
-        const distanceFromCenter = index - centerIndex;
-        const rotation = distanceFromCenter * 3;
-        const translateY = Math.abs(distanceFromCenter) * Math.abs(distanceFromCenter) * 2;
-        
-        el.style.setProperty('--arc-rotation', rotation);
-        el.style.setProperty('--arc-translate-y', `${translateY}px`);
-      }
 
       container.appendChild(el);
     });
