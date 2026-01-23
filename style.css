@@ -1018,6 +1018,7 @@ body {
 
     .card.selected {
         transform: translateY(-15px);
+        box-shadow: var(--card-shadow);
     }
 
     #human-hand .card {
