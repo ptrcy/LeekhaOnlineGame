@@ -564,14 +564,34 @@ body {
 
     .bottom {
         bottom: 25px;
+        left: 0;
+        right: 0;
+        transform: none;
+        width: 100%;
+        align-items: stretch;
+    }
+
+    /* Hide left/right players by default on mobile, show when active */
+    .left:not(.active-turn) {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .right:not(.active-turn) {
+        opacity: 0;
+        pointer-events: none;
     }
 
     .left {
         left: 5px;
+        top: 35%;
+        transition: opacity 0.3s ease;
     }
 
     .right {
         right: 5px;
+        top: 35%;
+        transition: opacity 0.3s ease;
     }
 }
 
@@ -582,15 +602,36 @@ body {
 
     .bottom {
         bottom: 20px;
+        left: 0;
+        right: 0;
+        transform: none;
+        width: 100%;
+        align-items: stretch;
+    }
+
+    /* Hide left/right players by default on mobile, show when active */
+    .left:not(.active-turn) {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .right:not(.active-turn) {
+        opacity: 0;
+        pointer-events: none;
     }
 
     .left {
         left: 2px;
+        top: 35%;
+        transition: opacity 0.3s ease;
     }
 
     .right {
         right: 2px;
+        top: 35%;
+        transition: opacity 0.3s ease;
     }
+}
 
     .avatar {
         width: 35px !important;
@@ -606,6 +647,11 @@ body {
 @media (max-width: 375px) {
     .bottom {
         bottom: 15px;
+        left: 0;
+        right: 0;
+        transform: none;
+        width: 100%;
+        align-items: stretch;
     }
 }
 
@@ -671,7 +717,7 @@ body {
 /* Human Hand */
 #human-hand {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-end;
     flex-wrap: nowrap;
     height: calc(var(--hand-card-height) + 40px);
@@ -743,8 +789,8 @@ body {
 
 @media (max-width: 768px) {
     #human-hand {
-        width: 98%;
-        padding: 0 5px 8px 5px;
+        width: 100%;
+        padding: 0 2px 8px 2px;
         height: calc(var(--hand-card-height) + 35px);
         min-height: calc(var(--hand-card-height) + 35px);
     }
@@ -753,7 +799,7 @@ body {
 @media (max-width: 480px) {
     #human-hand {
         width: 100%;
-        padding: 0 3px 6px 3px;
+        padding: 0 1px 6px 1px;
         height: calc(var(--hand-card-height) + 30px);
         min-height: calc(var(--hand-card-height) + 30px);
     }
@@ -761,7 +807,7 @@ body {
 
 @media (max-width: 375px) {
     #human-hand {
-        padding: 0 2px 5px 2px;
+        padding: 0 0px 5px 0px;
         height: calc(var(--hand-card-height) + 28px);
         min-height: calc(var(--hand-card-height) + 28px);
     }

@@ -127,7 +127,7 @@ export class DOMRenderer extends GameRenderer {
     // Solving for overlapRatio: overlapRatio = 1 - (availableWidth - cardWidth) / ((cardCount - 1) * cardWidth)
     
     const minOverlap = 0.15;   // Reduced from 0.4 (15% overlap minimum)
-    const maxOverlap = 0.666; // 66.6% overlap maximum (shows 1/3 of each card)
+    const maxOverlap = 0.85; // 85% overlap maximum (allows full hand on mobile)
     
     let overlapRatio;
     if (cardCount <= 1) {
