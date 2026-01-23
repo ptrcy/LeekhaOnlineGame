@@ -112,15 +112,21 @@ export class DOMRenderer extends GameRenderer {
     const computedStyle = getComputedStyle(document.documentElement);
     const cardWidth = parseFloat(computedStyle.getPropertyValue('--hand-card-width')) || 82;
     
-    // Available width (container width with some padding)
-    const containerWidth = container.offsetWidth || window.innerWidth * 0.95;
-    const availableWidth = containerWidth - 10; // Small padding
+    // Calculate available width inside padding
+    // We want to use the actual content box width
+    const containerStyle = getComputedStyle(container);
+    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
+    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
+    
+    // container.clientWidth includes padding but not border/scrollbar
+    // So available content width is clientWidth - padding
+    const availableWidth = container.clientWidth - paddingLeft - paddingRight;
     
     // Calculate optimal overlap ratio
     // Formula: totalWidth = cardWidth + (cardCount - 1) * cardWidth * (1 - overlapRatio)
     // Solving for overlapRatio: overlapRatio = 1 - (availableWidth - cardWidth) / ((cardCount - 1) * cardWidth)
     
-    const minOverlap = 0.5;   // 50% overlap minimum (shows half of each card)
+    const minOverlap = 0.15;   // Reduced from 0.4 (15% overlap minimum)
     const maxOverlap = 0.666; // 66.6% overlap maximum (shows 1/3 of each card)
     
     let overlapRatio;
@@ -140,7 +146,7 @@ export class DOMRenderer extends GameRenderer {
     container.style.setProperty('--dynamic-overlap', `${overlapPx}px`);
     container.classList.add('dynamic-overlap');
     
-    // Center cards if at minimum overlap (0.5) - meaning we have extra space
+    // Center cards if at minimum overlap - meaning we have extra space
     if (overlapRatio <= minOverlap + 0.01) {
       container.classList.add('centered-cards');
     } else {
