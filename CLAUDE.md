@@ -13,7 +13,7 @@ Leekha (also known as Likha) is a four-player trick-taking card game where one h
 bun build
 
 # Serve production build
-bun start
+bunx serve . -p 3000
 
 # Development server (serves from root)
 bun dev
