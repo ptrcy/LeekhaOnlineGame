@@ -339,7 +339,7 @@ body {
 
 #scoreboard {
     position: absolute;
-    bottom: 20px;
+    top: 20px;
     right: 20px;
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
@@ -409,7 +409,7 @@ body {
 
 @media (max-width: 768px) {
     #scoreboard {
-        bottom: 10px;
+        top: 10px;
         right: 10px;
         padding: 8px 10px;
         max-width: 160px;
@@ -427,7 +427,7 @@ body {
 
 @media (max-width: 480px) {
     #scoreboard {
-        bottom: 5px;
+        top: 5px;
         right: 5px;
         padding: 6px 8px;
         max-width: 135px;
@@ -825,7 +825,6 @@ body {
 
 .card.selected {
     transform: translateY(-30px) scale(1.05);
-    z-index: 100 !important;
 }
 
 /* Hand cards use larger size */
@@ -943,7 +942,6 @@ body {
 
 .card.selected {
     transform: translateY(-30px) scale(1.08);
-    z-index: 101 !important;
 }
 
 .card.selected:hover {
@@ -1208,6 +1206,7 @@ body {
     padding: 12px 16px;
     transition: all 0.3s ease;
     box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
+    max-width: min(200px, 40vw);
 }
 
 #pass-modal:disabled {
@@ -1313,9 +1312,10 @@ body {
     }
 
     #pass-modal {
-        padding: 8px 12px;
-        gap: 6px;
+        padding: 8px 10px;
+        gap: 4px;
         border-radius: 8px;
+        max-width: min(150px, 35vw);
     }
 
     .pass-arrow {
@@ -1465,7 +1465,7 @@ button:disabled {
     }
 
     #scoreboard {
-        bottom: 3px;
+        top: 3px;
         right: 3px;
         padding: 6px;
         max-width: 120px;
