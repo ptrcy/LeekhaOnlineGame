@@ -1,5 +1,6 @@
 "use strict";
 import { GameEvents } from './events.js';
+import { RANKS, SUITS } from './card.js';
 import {
   TIMING,
   PLAYER_ELEMENT_IDS,
@@ -81,6 +82,9 @@ export class DOMRenderer extends GameRenderer {
     // Keyboard navigation state
     this.focusedCardIndex = -1;
     this.validCardIndices = [];
+
+    // Keep image objects alive so preloads stay warm in cache.
+    this.preloadedCardImages = [];
 
     // Bind keyboard handler
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -173,6 +177,9 @@ export class DOMRenderer extends GameRenderer {
     this.elements.aiThinkingIndicator = document.getElementById('ai-thinking-indicator');
     this.elements.notificationArea = document.getElementById('notification-area');
 
+    // Warm the browser cache to avoid card-image flash on first plays.
+    this.preloadCardImages();
+
     // Subscribe to game events
     this.subscribeToEvents();
 
@@ -189,6 +196,21 @@ export class DOMRenderer extends GameRenderer {
 
     // Setup keyboard navigation
     document.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  preloadCardImages() {
+    const images = [];
+    for (const suit of SUITS) {
+      for (const rank of RANKS) {
+        const svgRank = rank === '10' ? 'T' : rank;
+        const img = new Image();
+        img.decoding = 'async';
+        img.loading = 'eager';
+        img.src = `/cards/${svgRank}${suit}.svg`;
+        images.push(img);
+      }
+    }
+    this.preloadedCardImages = images;
   }
 
   /**
@@ -509,6 +531,8 @@ export class DOMRenderer extends GameRenderer {
     img.alt = `${card.rank} of ${SUIT_NAMES[card.suit]}`;
     img.className = 'card-svg';
     img.draggable = false;
+    img.decoding = 'async';
+    img.loading = 'eager';
 
     el.appendChild(img);
 
@@ -681,11 +705,13 @@ export class DOMRenderer extends GameRenderer {
 
     const cardCount = hand.length;
 
+    const isPlayMode = this.selectionMode === 'play';
+
     hand.forEach((card, index) => {
       const isValid = validCards.some(
         c => c.suit === card.suit && c.rank === card.rank
       );
-      const el = this.createSelectableCardElement(card, index, isValid, maxSelection);
+      const el = this.createSelectableCardElement(card, index, isValid, maxSelection, isPlayMode);
 
       container.appendChild(el);
     });
@@ -702,7 +728,7 @@ export class DOMRenderer extends GameRenderer {
    * @param {number} maxSelection - Max cards to select
    * @returns {HTMLElement} Card element
    */
-  createSelectableCardElement(card, index, isValid, maxSelection) {
+  createSelectableCardElement(card, index, isValid, maxSelection, isPlayMode = false) {
     const el = this.createCardElement(card);
     el.dataset.index = index;
     el.dataset.suit = card.suit;
@@ -715,8 +741,14 @@ export class DOMRenderer extends GameRenderer {
     el.setAttribute('tabindex', isValid ? '0' : '-1');
 
     if (!isValid) {
-      el.classList.add('disabled');
+      if (isPlayMode) {
+        el.classList.add('frozen');
+      } else {
+        el.classList.add('disabled');
+      }
       el.setAttribute('aria-disabled', 'true');
+    } else if (isPlayMode) {
+      el.classList.add('playable');
     }
 
     el.onclick = () => {

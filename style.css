@@ -739,6 +739,22 @@ body {
     transform: scale(0.9);
 }
 
+.card.frozen {
+    cursor: default;
+    filter: none;
+    opacity: 1;
+    transform: none;
+}
+
+.card.frozen:hover {
+    transform: none;
+    box-shadow: var(--card-shadow);
+}
+
+.card.playable {
+    transform: translateY(-8px);
+}
+
 .card:not(.disabled):hover {
     transform: translateY(-20px) scale(1.05);
     z-index: 100 !important;
