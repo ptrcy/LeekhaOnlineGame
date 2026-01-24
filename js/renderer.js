@@ -88,6 +88,7 @@ export class DOMRenderer extends GameRenderer {
 
     // Bind keyboard handler
     this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleResize = this.handleResize.bind(this);
   }
 
   /**
@@ -100,8 +101,8 @@ export class DOMRenderer extends GameRenderer {
 
   /**
    * Calculate and apply dynamic card overlap for mobile to use full width
-   * Overlap ranges from 0.5 (50%) to 0.666 (66.6%)
-   * At 0.5 overlap, cards are centered
+   * Overlap ranges from 0.15 (15%) to 0.85 (85%)
+   * At the minimum overlap, cards are centered
    * @param {HTMLElement} container - The hand container
    * @param {number} cardCount - Number of cards
    */
@@ -196,6 +197,13 @@ export class DOMRenderer extends GameRenderer {
 
     // Setup keyboard navigation
     document.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('resize', this.handleResize);
+    window.addEventListener('orientationchange', this.handleResize);
+  }
+
+  handleResize() {
+    if (!this.elements.humanHand || !this.currentHand) return;
+    this.applyMobileCardLayout(this.elements.humanHand, this.currentHand.length);
   }
 
   preloadCardImages() {
@@ -788,6 +796,7 @@ export class DOMRenderer extends GameRenderer {
    * Disable card selection mode
    */
   disableCardSelection() {
+    this.showPassModal(false, false);
     this.selectionMode = null;
     this.selectedCards.clear();
 

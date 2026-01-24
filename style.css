@@ -819,11 +819,19 @@ body {
     transform: translateY(-8px);
 }
 
-.card:not(.disabled):hover {
+.card.playable:not(.selected):hover {
+    transform: translateY(-8px);
+}
+
+.card:not(.disabled):not(.playable):not(.selected):hover {
     transform: none;
 }
 
 .card.selected {
+    transform: translateY(-30px) scale(1.05);
+}
+
+.card.selected:hover {
     transform: translateY(-30px) scale(1.05);
 }
 
@@ -901,7 +909,7 @@ body {
     border: none;
     position: relative;
     margin-right: var(--card-overlap);
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
     cursor: pointer;
     z-index: 1;
     display: flex;
@@ -936,16 +944,8 @@ body {
     margin-right: 0;
 }
 
-.card:hover {
+.card:not(.playable):not(.selected):hover {
     transform: none;
-}
-
-.card.selected {
-    transform: translateY(-30px) scale(1.08);
-}
-
-.card.selected:hover {
-    transform: translateY(-30px) scale(1.08);
 }
 
 /* Keyboard focus indicator for accessibility */
@@ -956,7 +956,7 @@ body {
 }
 
 .card.keyboard-focus.selected {
-    transform: translateY(-30px);
+    transform: translateY(-30px) scale(1.05);
 }
 
 /* Focus visible styles for keyboard navigation */
@@ -975,17 +975,6 @@ body {
         transition: none;
         animation: none;
     }
-}
-
-.card.disabled {
-    filter: brightness(0.7) saturate(0.5);
-    cursor: not-allowed;
-    opacity: 0.6;
-    transform: scale(0.98);
-}
-
-.card.disabled:hover {
-    transform: scale(0.98);
 }
 
 .card.red {
@@ -1071,7 +1060,7 @@ body {
         padding: 4px;
     }
 
-    .card:hover {
+    .card:not(.playable):not(.selected):hover {
         transform: none;
     }
 
@@ -1079,7 +1068,7 @@ body {
         padding: 5px;
     }
 
-    #human-hand .card:hover {
+    #human-hand .card:not(.playable):not(.selected):hover {
         transform: none;
     }
 
@@ -1093,7 +1082,7 @@ body {
         padding: 3px;
     }
 
-    .card:hover {
+    .card:not(.playable):not(.selected):hover {
         transform: none;
     }
 
@@ -1115,7 +1104,7 @@ body {
         padding: 4px;
     }
 
-    #human-hand .card:hover {
+    #human-hand .card:not(.playable):not(.selected):hover {
         transform: none;
     }
 
@@ -1484,7 +1473,7 @@ button:disabled {
         height: min(150px, 26vw);
     }
 
-    #human-hand .card:hover {
+    #human-hand .card:not(.playable):not(.selected):hover {
         transform: none;
     }
 
