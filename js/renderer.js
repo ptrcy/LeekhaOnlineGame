@@ -847,18 +847,29 @@ export class DOMRenderer extends GameRenderer {
 
     players.forEach((player, i) => {
       const row = document.createElement('div');
-      row.style.display = 'flex';
-      row.style.justifyContent = 'space-between';
-      row.style.color = (i === 0) ? 'var(--accent-gold)' : 'white';
+      row.className = 'score-row';
+      row.classList.add((i % 2 === 0) ? 'team-blue' : 'team-red');
+      if (i === 0) {
+        row.style.fontWeight = '700';
+      }
 
       const nameSpan = document.createElement('span');
+      nameSpan.className = 'score-cell name';
       nameSpan.textContent = player.name;
 
-      const scoreSpan = document.createElement('span');
-      scoreSpan.textContent = `${player.score} (${player.currentRoundPoints})`;
+      const lastSpan = document.createElement('span');
+      lastSpan.className = 'score-cell last';
+      const lastRoundScore = Math.max(0, player.score - player.currentRoundPoints);
+      lastSpan.textContent = lastRoundScore;
+
+      const roundSpan = document.createElement('span');
+      roundSpan.className = 'score-cell round';
+      const roundScore = player.currentRoundPoints;
+      roundSpan.textContent = roundScore > 0 ? `+${roundScore}` : `${roundScore}`;
 
       row.appendChild(nameSpan);
-      row.appendChild(scoreSpan);
+      row.appendChild(lastSpan);
+      row.appendChild(roundSpan);
       list.appendChild(row);
     });
 

@@ -5,6 +5,8 @@ tmpclaude-*
 leekha-round-state-*.json
 .claude/
 dist/
+experiments/
+nul
 
 # Local Netlify folder
 .netlify

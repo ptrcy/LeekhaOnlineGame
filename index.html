@@ -33,7 +33,12 @@
         <!-- Floating UI / HUD -->
         <div id="ui-layer">
             <div id="scoreboard" class="panel hidden">
-                <h3>Scoreboard</h3>
+                <div class="scoreboard-title">Scores</div>
+                <div class="scoreboard-header">
+                    <span>Player</span>
+                    <span>Last</span>
+                    <span>Round</span>
+                </div>
                 <div id="scores-list"></div>
             </div>
 
@@ -47,21 +52,8 @@
             <div id="notification-area" role="log" aria-live="polite" aria-label="Game notifications"></div>
 
             <button id="pass-modal" class="hidden" aria-label="Confirm pass selection" disabled>
-                <svg class="pass-arrow" viewBox="0 0 64 64" aria-hidden="true">
-                    <defs>
-                        <linearGradient id="arrow-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stop-color="#fbbf24"/>
-                            <stop offset="100%" stop-color="#f59e0b"/>
-                        </linearGradient>
-                        <filter id="arrow-glow">
-                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                            <feMerge>
-                                <feMergeNode in="coloredBlur"/>
-                                <feMergeNode in="SourceGraphic"/>
-                            </feMerge>
-                        </filter>
-                    </defs>
-                    <path d="M44 12 L20 32 L44 52" stroke="url(#arrow-gradient)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#arrow-glow)"/>
+                <svg class="pass-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5 12h14M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <span class="pass-label">Pass <span id="pass-count">0</span>/3</span>
             </button>
