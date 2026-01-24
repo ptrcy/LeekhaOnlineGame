@@ -57,8 +57,8 @@
 @media (max-width: 768px) {
     :root {
         /* Trick cards - smaller for center */
-        --card-width: 60px;
-        --card-height: 84px;
+        --card-width: 75px;
+        --card-height: 105px;
 
         /* Hand cards - 2/3 overlap (shows 1/3 of each card) */
         --hand-card-width: 90px;
@@ -71,8 +71,8 @@
 @media (max-width: 480px) {
     :root {
         /* Trick cards - compact */
-        --card-width: 50px;
-        --card-height: 70px;
+        --card-width: 63px;
+        --card-height: 88px;
         --card-radius: 6px;
 
         /* Hand cards - 2/3 overlap */
@@ -86,8 +86,8 @@
 @media (max-width: 375px) {
     :root {
         /* Trick cards - very compact */
-        --card-width: 45px;
-        --card-height: 63px;
+        --card-width: 56px;
+        --card-height: 79px;
 
         /* Hand cards - 2/3 overlap */
         --hand-card-width: 74px;
@@ -140,7 +140,9 @@ body {
     height: 100vh;
     overflow: hidden;
     background-color: var(--bg-primary);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cdefs%3E%3Cfilter id='n' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.015' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='%230f172a'/%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.25'/%3E%3C/svg%3E");
+    background-image:
+        radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 55%),
+        linear-gradient(180deg, #0f172a 0%, #111827 100%);
     font-family: 'Inter', sans-serif;
     color: var(--text-light);
     padding-bottom: env(safe-area-inset-bottom);
@@ -703,7 +705,19 @@ body {
 }
 
 .avatar.bot::before {
-    content: '🤖';
+    content: '🙂';
+}
+
+.avatar.bot-1::before {
+    content: '😊';
+}
+
+.avatar.bot-2::before {
+    content: '😃';
+}
+
+.avatar.bot-3::before {
+    content: '😄';
 }
 
 .player-info .name {
