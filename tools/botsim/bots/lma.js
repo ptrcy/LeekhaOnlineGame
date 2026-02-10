@@ -264,7 +264,7 @@ const LikhaBot = (() => {
     return candidates[0].card; // Min danger
   }
 
-  // ---------- Following Logic (restored to Phase 2) ----------
+  // ---------- Following Logic (restored to Phase 2 with Fixes) ----------
 
   function chooseWhenFollowing(legalCards, trick, fullHand, ctx) {
     const leadCard = trick[0].card;
@@ -282,13 +282,22 @@ const LikhaBot = (() => {
         if (play.card.suit === leadSuit && play.card.rank > currentHighRank) {
           currentHighRank = play.card.rank;
         }
-        if (isPenalty(play.card)) pointsInTrick += (play.card.points || (isLikhaBlack(play.card) ? 13 : isLikhaRed(play.card) ? 10 : 0));
+        // Fix points: H=1, Qs=13, 10D=10
+        let p = 0;
+        if (play.card.suit === 'H') p = 1;
+        else if (isLikhaBlack(play.card)) p = 13;
+        else if (isLikhaRed(play.card)) p = 10;
+
+        pointsInTrick += (play.card.points !== undefined ? play.card.points : p);
       });
 
+      // Double check Q/10 presence (in case points weren't tallied)
       const qPlayedInTrick = trick.some(t => isLikhaBlack(t.card));
       const tenPlayedInTrick = trick.some(t => isLikhaRed(t.card));
-      if (qPlayedInTrick) pointsInTrick += 13;
-      if (tenPlayedInTrick) pointsInTrick += 10;
+
+      // Safety: If Q/10 in trick, force points > 0
+      if (qPlayedInTrick && pointsInTrick < 13) pointsInTrick += 13;
+      if (tenPlayedInTrick && pointsInTrick < 10) pointsInTrick += 10;
 
       const isDangerous = pointsInTrick > 0 || (leadSuit === 'S' && ctx.qInOpponents) || (leadSuit === 'D' && ctx.tenInOpponents);
 
@@ -304,8 +313,25 @@ const LikhaBot = (() => {
 
       following.sort(compareRankAsc);
       if (isDangerous) {
-        // We want lowest rank usually.
-        return following[0];
+        // We want lowest rank usually (to allow others to over-top if possible, and save high cards).
+        // EXCEPT if Lowest is a Penalty Card (e.g. Qs) and we have Higher Safe (Ks/As).
+        // Playing Qs means EATING 13 points immediately.
+        // Playing Ks means Winning 13 points (maybe). And keeping Qs.
+        // If we win either way, we eat the points in the trick.
+        // If we play Qs, we add +13 to the trick, AND we eat it. Total +13 damage.
+        // If we play Ks, trick has X points. We eat X. (Q is not in trick? If Q in trick, X includes 13).
+        // If Q is IN TRICK:
+        //   Playing Qs (Impossible, Q is already played).
+        //   Playing Ks. We eat Q.
+        // If Q is NOT in trick (but dangerous context):
+        //   Playing Qs -> We win. We eat Q (our own). Self-inflicted 13 pts.
+        //   Playing Ks -> We win. We keep Q.
+        //   Keeping Q is better than eating it.
+
+        // So: Filter out Penalty Cards from 'Lowest Winner' if possible.
+        const safe = following.filter(c => !isLikha(c));
+        if (safe.length > 0) return safe[0]; // Lowest Safe Card
+        return following[0]; // Only penalties left
       } else {
         // Not dangerous. We win a clean trick.
         // Play highest card to get rid of it? (e.g. A, K)
@@ -318,8 +344,7 @@ const LikhaBot = (() => {
       }
     }
 
-    // Dump logic (Void)
-    // 1. Likhas
+    // Dump logic (Void) - same as before
     const q = legalCards.find(isLikhaBlack); if (q) return q;
     const ten = legalCards.find(isLikhaRed); if (ten) return ten;
 
@@ -329,9 +354,6 @@ const LikhaBot = (() => {
       hearts.sort(compareRankDesc);
       return hearts[0];
     }
-
-    // 3. Short suit voids? or High cards?
-    // Dump high cards.
     const safeDump = legalCards.filter(c => !isLikha(c));
     if (safeDump.length > 0) {
       safeDump.sort((a, b) => b.rank - a.rank);
