@@ -236,10 +236,11 @@ const LikhaBot = (() => {
     if (!playersWithSuit.includes(3)) opponentsVoid++;
     if (opponentsVoid > 0) danger += 100 * opponentsVoid;
 
-    // Bleed Spades logic (Only if SAFE and Beneficial)
+    // Avoid leading high Spades if Q is out (risk of eating it)
+    // Also encourage bleeding low Spades to force Q out.
     if (suit === 'S' && ctx.qInOpponents) {
-      if (card.rank >= 12) danger += 2000;
-      else danger -= 200; // Flush logic
+      if (card.rank >= 13) danger += 2000; // K, A
+      else danger -= 200; // Flush logic (safe leads)
     }
 
     // EXIT STRATEGY:
