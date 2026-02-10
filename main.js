@@ -6,6 +6,7 @@ import { DOMRenderer } from './js/renderer.js';
 import { DOMInputController } from './js/input-controller.js';
 import { AudioManager } from './js/audio.js';
 
+
 // Entry point
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("Likha Game Initializing...");

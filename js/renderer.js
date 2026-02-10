@@ -992,6 +992,96 @@ export class DOMRenderer extends GameRenderer {
   }
 
   /**
+   * Setup debug hover listeners for bots
+   */
+  setupDebugHovers() {
+    window.DEBUG_HOVERS_SETUP = true;
+    console.log('[DEBUG] Setting up debug hovers');
+    const botIds = [
+      { id: 'player-right', index: 1 },
+      { id: 'player-top', index: 2 },
+      { id: 'player-left', index: 3 }
+    ];
+
+    botIds.forEach(({ id, index }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('mouseenter', (e) => this.showBotHand(index, el));
+        el.addEventListener('mouseleave', () => this.hideBotHand());
+        // Mobile support (long press? or just tap?) - Tap to toggle maybe?
+        el.addEventListener('click', (e) => {
+          // If already showing this one, hide it. Else show.
+          const existing = document.querySelector('.bot-hand-preview');
+          if (existing && existing.dataset.playerIndex == index) {
+            this.hideBotHand();
+          } else {
+            this.showBotHand(index, el);
+          }
+        });
+      }
+    });
+  }
+
+  showBotHand(playerIndex, targetEl) {
+    this.hideBotHand(); // Clear existing
+
+    if (!this.allHands || !this.allHands[playerIndex]) return;
+
+    const hand = this.allHands[playerIndex];
+    if (hand.length === 0) return;
+
+    // Create container
+    const container = document.createElement('div');
+    container.className = 'bot-hand-preview';
+    container.dataset.playerIndex = playerIndex;
+
+    // Sort hand for display (Suit then Rank)
+    const sortedHand = [...hand].sort((a, b) => {
+      if (a.suit !== b.suit) return SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit);
+      return a.value - b.value;
+    });
+
+    sortedHand.forEach(card => {
+      const cardEl = this.createCardElement(card);
+      cardEl.classList.add('mini-card');
+      container.appendChild(cardEl);
+    });
+
+    document.body.appendChild(container);
+
+    // Position it
+    const rect = targetEl.getBoundingClientRect();
+
+    // Default: Center above the player
+    let top = rect.top - 100;
+    let left = rect.left + (rect.width / 2) - (container.offsetWidth / 2);
+
+    // Adjust based on position class
+    if (targetEl.classList.contains('left')) {
+      top = rect.top + (rect.height / 2) - (container.offsetHeight / 2);
+      left = rect.right + 20;
+    } else if (targetEl.classList.contains('right')) {
+      top = rect.top + (rect.height / 2) - (container.offsetHeight / 2);
+      left = rect.left - container.offsetWidth - 20;
+    } else if (targetEl.classList.contains('top')) {
+      top = rect.bottom + 20;
+    }
+
+    // Keep within viewport
+    if (left < 10) left = 10;
+    if (top < 10) top = 10;
+    if (left + container.offsetWidth > window.innerWidth - 10) left = window.innerWidth - container.offsetWidth - 10;
+
+    container.style.top = `${top}px`;
+    container.style.left = `${left}px`;
+  }
+
+  hideBotHand() {
+    const existing = document.querySelectorAll('.bot-hand-preview');
+    existing.forEach(el => el.remove());
+  }
+
+  /**
    * Clear the trick pile
    */
   clearTrickPile() {
@@ -1037,6 +1127,8 @@ export class HeadlessRenderer extends GameRenderer {
    * Setup debug hover listeners for bots
    */
   setupDebugHovers() {
+    window.DEBUG_HOVERS_SETUP = true;
+    console.log('[DEBUG] Setting up debug hovers');
     const botIds = [
       { id: 'player-right', index: 1 },
       { id: 'player-top', index: 2 },
