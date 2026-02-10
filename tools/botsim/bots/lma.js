@@ -224,8 +224,10 @@ const LikhaBot = (() => {
     if (ctx.tenInHand && suit === 'D') danger += 150;
 
     // Avoid leading high Diamonds if 10D is out (risk of eating it)
+    // Also encourage bleeding low Diamonds to force 10D out.
     if (suit === 'D' && ctx.tenInOpponents) {
       if (card.rank >= 11) danger += 1500; // J, Q, K, A
+      else danger -= 200; // Flush logic (safe leads)
     }
 
     // Voids Check
