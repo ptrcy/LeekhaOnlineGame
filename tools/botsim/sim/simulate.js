@@ -2,7 +2,7 @@ import { GameState } from '../../../js/game-state.js';
 import { BotPlayer } from '../../../js/player.js';
 import { GameEventEmitter } from '../../../js/events.js';
 
-const BOT_TYPES = ['lmg', 'lmlm', 'lmx', 'lmx2'];
+const BOT_TYPES = ['lmg', 'lmlm', 'lmx', 'lmx2', 'lmc'];
 
 async function runMatchup(team0Bot, team1Bot, simGames, verbose = true) {
     const t0 = team0Bot.toLowerCase();

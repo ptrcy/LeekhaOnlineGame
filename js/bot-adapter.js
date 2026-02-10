@@ -93,13 +93,13 @@ export class BotAdapter {
         const suit = normalized[normalized.length - 1].toUpperCase();
 
         const foundCard = hand.find(c => c.rank === rank && c.suit === suit);
-        
+
         if (!foundCard) {
-            console.error(`Card not found in hand: ${botCard} (${rank}${suit}). Available cards:`, 
+            console.error(`Card not found in hand: ${botCard} (${rank}${suit}). Available cards:`,
                 hand.map(c => `${c.rank}${c.suit}`));
             return legalFallback();
         }
-        
+
         return foundCard;
     }
 
@@ -115,7 +115,7 @@ export class BotAdapter {
         const botHand = this.convertHandToBotFormat(hand);
         const ctx = this.buildPassContext();
         let botCards;
-        
+
         try {
             botCards = this.bot.choosePass(botHand, ctx);
         } catch (error) {
@@ -136,14 +136,14 @@ export class BotAdapter {
         const cards = botCards
             .map(botCard => this.convertBotCardToCard(botCard, hand))
             .filter(card => card !== null && card !== undefined);
-        
+
         // Ensure we have exactly 3 cards
         if (cards.length !== 3) {
             console.warn('Bot pass conversion resulted in', cards.length, 'cards, using fallback');
             const sorted = [...hand].sort((a, b) => b.value - a.value);
             return sorted.slice(0, 3);
         }
-        
+
         return cards;
     }
 
@@ -184,14 +184,14 @@ export class BotAdapter {
         }
 
         const card = this.convertBotCardToCard(botCard, hand);
-        
+
         // Final safety check - ensure we return a valid, legal card
         if (!card && hand.length > 0) {
             console.warn('Bot returned invalid card, using legal fallback');
             const valid = this.gameState?.getValidMoves ? this.gameState.getValidMoves(hand) : hand;
             return (valid && valid.length > 0) ? valid[0] : hand[0];
         }
-        
+
         return card;
     }
 
@@ -214,7 +214,10 @@ export class BotAdapter {
             hasQueenOfSpades: botHand[1] && Array.isArray(botHand[1]) ? botHand[1].includes('Qs') : false,
             trickType: this.getTrickType(),
             heartsBroken: tracker.heartsBroken,
+            queenOfSpadesPlayed: tracker.queenOfSpadesPlayed,
+            tenOfDiamondsPlayed: tracker.tenOfDiamondsPlayed,
             firstTrickRevealedVoid: tracker.firstTrickRevealedVoid,
+            playedCards: tracker.getPlayedCards(),
             trick: [],
             scores: [...this.gameState.scores],
             playerIndex: this.playerIndex
@@ -227,12 +230,12 @@ export class BotAdapter {
     buildFollowContext(botHand) {
         const tracker = this.gameState.cardTracker;
         const trick = this.gameState.trick;
-        
+
         if (!trick || trick.length === 0) {
             console.error('Invalid trick in buildFollowContext');
             return this.buildLeadContext(botHand);
         }
-        
+
         const leadCard = trick[0].card;
         const suitMap = { 'H': 0, 'S': 1, 'D': 2, 'C': 3 };
         const leadSuit = suitMap[String(leadCard.suit).toUpperCase()];
@@ -267,7 +270,10 @@ export class BotAdapter {
             highestRankPlayed: highestRank,
             hasQueenOfSpades: botHand[1] && Array.isArray(botHand[1]) ? botHand[1].includes('Qs') : false,
             trickType: this.getTrickType(),
+            queenOfSpadesPlayed: tracker.queenOfSpadesPlayed,
+            tenOfDiamondsPlayed: tracker.tenOfDiamondsPlayed,
             firstTrickRevealedVoid: tracker.firstTrickRevealedVoid,
+            playedCards: tracker.getPlayedCards(),
             pointsInTrick: trickPoints,
             trick: trick,
             scores: [...this.gameState.scores],

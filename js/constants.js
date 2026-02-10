@@ -112,4 +112,4 @@ export const SPECIAL_CARDS = {
     TEN_OF_DIAMONDS: { suit: 'D', rank: '10' }
 };
 
-export const DEFAULT_BOT_TYPE = 'lmg';
+export const DEFAULT_BOT_TYPE = 'lma';

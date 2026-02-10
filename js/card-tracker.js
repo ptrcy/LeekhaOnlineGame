@@ -152,4 +152,12 @@ export class CardTracker {
 
         return hasPlayers;
     }
+    getPlayedCards() {
+        return {
+            'H': Array.from(this.playedCards['H']),
+            'S': Array.from(this.playedCards['S']),
+            'D': Array.from(this.playedCards['D']),
+            'C': Array.from(this.playedCards['C'])
+        };
+    }
 }

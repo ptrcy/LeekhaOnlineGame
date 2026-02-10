@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leekha Online - UI Documentation</title>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --accent: #2563eb;
+            --accent-light: #dbeafe;
+            --code-bg: #1e1e1e;
+            --code-text: #d4d4d4;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1, h2, h3 {
+            color: #0f172a;
+            margin-top: 2rem;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; border-bottom: 3px solid var(--accent); padding-bottom: 0.5rem; }
+        h2 { font-size: 1.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        h3 { font-size: 1.25rem; color: var(--text-secondary); }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background: #f1f5f9;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #d946ef;
+        }
+
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+
+        .diagram {
+            background: #fff;
+            border: 1px dashed #cbd5e1;
+            padding: 1rem;
+            text-align: center;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-core { background: #fee2e2; color: #991b1b; }
+        .badge-ui { background: #dbeafe; color: #1e40af; }
+        .badge-logic { background: #dcfce7; color: #166534; }
+
+        .alert {
+            background: #fff7ed;
+            border-left: 4px solid #f97316;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .good-practice {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        th { background: #f8fafc; }
+    </style>
+</head>
+<body>
+
+    <h1>Leekha Game UI Documentation</h1>
+    <p class="intro">
+        Welcome to the Leekha Online frontend documentation. This guide is designed to help you understand the User Interface architecture, 
+        how the game state renders to the DOM, and how user input is handled. The application uses <strong>Vanilla JavaScript (ES Modules)</strong> 
+        with no external UI frameworks (React, Vue, etc.).
+    </p>
+
+    <div class="card">
+        <h2>🏗️ Architecture Overview</h2>
+        <p>The application follows a loose <strong>Model-View-Controller (MVC)</strong> pattern, decoupled via an Event Bus.</p>
+        
+        <div class="diagram">
+            <strong>Game Logic (Model)</strong> <br>
+            <em>GameState, Player, Bots</em>
+            <br>⬇️ Events (State Changes)<br>
+            <strong>Event Bus (Observer)</strong> <br>
+            <em>js/events.js</em>
+            <br>⬇️ Events (Render Requests) &nbsp;&nbsp;&nbsp; ⬆️ User Actions (Clicks)<br>
+            <strong>UI Layer (View + Controller)</strong> <br>
+            <em>DOMRenderer, DOMInputController</em>
+        </div>
+
+        <ul>
+            <li><span class="badge badge-logic">Model</span> <strong>GameState</strong>: Manages rules, scores, and turns. Does not know about HTML.</li>
+            <li><span class="badge badge-core">Bus</span> <strong>GameEventEmitter</strong>: The central communication hub. The logic emits events like <code>HANDS_DEALT</code>, and the UI listens.</li>
+            <li><span class="badge badge-ui">View</span> <strong>DOMRenderer</strong>: Listens for events and updates the HTML. Purely reactive.</li>
+            <li><span class="badge badge-ui">Controller</span> <strong>DOMInputController</strong>: Handles clicks/interaction and returns Promises to the game logic.</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>🖥️ The DOM Renderer (<code>js/renderer.js</code>)</h2>
+        <p>
+            The <code>DOMRenderer</code> class is responsible for all visual updates. It subscribes to game events and manipulates the DOM elements found in <code>index.html</code>.
+        </p>
+
+        <h3>Key Responsibilities</h3>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td><code>initialize()</code></td>
+                <td>Caches DOM element references (e.g., <code>this.elements.humanHand</code>) and sets up listeners.</td>
+            </tr>
+            <tr>
+                <td><code>renderHands(hands)</code></td>
+                <td>
+                    Clears and rebuilds the player's hand using <code>&lt;div&gt;</code> and <code>&lt;img&gt;</code> tags. 
+                    Uses <strong>memoization</strong> to avoid re-rendering if the hand hasn't changed.
+                </td>
+            </tr>
+            <tr>
+                <td><code>renderTrickCard()</code></td>
+                <td>Places a played card into the center "trick pile", rotated and positioned based on the player ID.</td>
+            </tr>
+            <tr>
+                <td><code>enableCardSelection()</code></td>
+                <td>Makes the hand interactive, adding <code>onclick</code> handlers that resolve Promises in the InputController.</td>
+            </tr>
+        </table>
+
+        <h3>Code Excerpt: Rendering Optimization</h3>
+        <p>The renderer avoids expensive DOM operations by checking if the data has actually changed.</p>
+<pre><code>// js/renderer.js
+renderHands(hands, options = {}) {
+    const humanHand = hands[0];
+    const handKey = this.generateHandKey(humanHand);
+
+    // Skip re-render if hand hasn't changed (Memoization)
+    if (!options.force && handKey === this.lastRenderedHandKey && !this.selectionMode) {
+        return;
+    }
+    
+    // ... Proceed to clear DOM and rebuild cards
+    this.lastRenderedHandKey = handKey;
+}</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>🎮 Input Handling (<code>js/input-controller.js</code>)</h2>
+        <p>
+            User input is handled via an asynchronous State Machine. The game logic "pauses" (awaits) until the user makes a selection.
+        </p>
+
+        <h3>The Flow</h3>
+        <ol>
+            <li>Game Logic calls <code>player.playCard()</code>.</li>
+            <li>Player calls <code>inputController.getCardSelection()</code>.</li>
+            <li>Controller enters <code>PLAY_PENDING</code> state and returns a <code>Promise</code>.</li>
+            <li>Controller emits <code>ENABLE_CARD_SELECTION</code> event.</li>
+            <li>Renderer updates UI to allow clicks.</li>
+            <li>User clicks a card -> <code>handleCardClick()</code> resolves the Promise.</li>
+        </ol>
+
+        <h3>Code Excerpt: Async Input</h3>
+<pre><code>// js/input-controller.js
+async getCardSelection(hand, validMoves) {
+    return new Promise((resolve, reject) => {
+        this.state = SelectionState.PLAY_PENDING;
+        this.pendingPlayResolve = resolve; // Store resolve function for later
+
+        // Tell UI to unlock cards
+        this.events.emit(GameEvents.ENABLE_CARD_SELECTION, {
+            hand,
+            validMoves,
+            mode: 'play'
+        });
+    });
+}
+
+handleCardClick(card) {
+    if (this.state === SelectionState.PLAY_PENDING) {
+        // ... validate move ...
+        this.pendingPlayResolve(card); // Unblock the Game Logic
+    }
+}</code></pre>
+    </div>
+
+    <div class="card">
+        <h2>🎨 Styling & Responsive Design (<code>style.css</code>)</h2>
+        <p>
+            The app uses a "Glassmorphism" aesthetic with extensive CSS variables for theming. It is fully responsive, adjusting card sizes and positions for Mobile, Tablet, and Desktop.
+        </p>
+
+        <h3>CSS Variables</h3>
+<pre><code>:root {
+    --card-width: 90px;
+    --card-height: 126px;
+    --hand-card-overlap: -50px; /* Negative margin stacks cards */
+    --glass-bg: rgba(30, 41, 59, 0.8);
+}</code></pre>
+
+        <h3>Key Layouts</h3>
+        <ul>
+            <li><strong>#game-container</strong>: The root relative container.</li>
+            <li><strong>#table</strong>: Holds the 4 player areas (Top, Bottom, Left, Right) positioned absolutely.</li>
+            <li><strong>#human-hand</strong>: A flexbox container with negative margins to create the "fanned" card effect.</li>
+        </ul>
+        
+        <div class="good-practice">
+            <strong>Mobile Trick:</strong> On small screens, the renderer dynamically calculates <code>--dynamic-overlap</code> in JS to ensure the entire hand fits on screen width without horizontal scrolling if possible.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>⚠️ Critique & Improvements</h2>
+        <p>As you start working, keep these potential issues in mind.</p>
+
+        <h3>1. DOM Coupling</h3>
+        <div class="alert">
+            <strong>Weakness:</strong> The JS relies heavily on specific ID strings (<code>#human-hand</code>, <code>#status-text</code>). Renaming an ID in HTML breaks the JS silently.
+            <br>
+            <strong>Improvement:</strong> Move configuration objects to a separate file or use data-attributes for binding instead of IDs.
+        </div>
+
+        <h3>2. State Management</h3>
+        <div class="alert">
+            <strong>Weakness:</strong> There is no single "store" for the UI state. The <code>DOMRenderer</code> keeps some local state (like <code>selectedCards</code> set), and the <code>GameState</code> keeps the logic state. Sync issues can occur.
+            <br>
+            <strong>Improvement:</strong> For a larger app, a lightweight state store (like Redux or a simple signal system) would be better.
+        </div>
+
+        <h3>3. Accessibility (a11y)</h3>
+        <div class="alert">
+            <strong>Weakness:</strong> While <code>aria-label</code> and keyboard navigation (arrow keys) are manually implemented in <code>renderer.js</code>, it is complex to maintain. Manual focus management is error-prone.
+            <br>
+            <strong>Improvement:</strong> Ensure the "Pass Modal" and other overlays trap focus correctly so users don't tab behind them.
+        </div>
+        
+        <h3>4. CSS Maintainability</h3>
+        <div class="alert">
+            <strong>Weakness:</strong> <code>style.css</code> is a single large file containing layout, theming, and animations.
+            <br>
+            <strong>Improvement:</strong> Split CSS into modules (e.g., <code>cards.css</code>, <code>layout.css</code>, <code>animations.css</code>) or use a utility class framework.
+        </div>
+    </div>
+
+</body>
+</html>
