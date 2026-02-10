@@ -223,6 +223,11 @@ const LikhaBot = (() => {
     // If I have 10♦, leading Diamonds is risky.
     if (ctx.tenInHand && suit === 'D') danger += 150;
 
+    // Avoid leading high Diamonds if 10D is out (risk of eating it)
+    if (suit === 'D' && ctx.tenInOpponents) {
+      if (card.rank >= 11) danger += 1500; // J, Q, K, A
+    }
+
     // Voids Check
     const suitIdx = { 'H': 0, 'S': 1, 'D': 2, 'C': 3 }[suit];
     const playersWithSuit = ctx.hasPlayers[suitIdx];
