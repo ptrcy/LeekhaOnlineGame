@@ -1527,3 +1527,39 @@ button:disabled {
 .hidden {
     display: none !important;
 }
+
+/* Debug Bot Hand Preview */
+.bot-hand-preview {
+    position: fixed;
+    z-index: 5000;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--accent-primary);
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    /* Slight gap */
+    max-width: 300px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+    /* Let clicks pass through? No, needs to be visible. */
+}
+
+.bot-hand-preview .card.mini-card {
+    position: relative;
+    width: 40px !important;
+    height: 56px !important;
+    font-size: 0;
+    /* Hide default text if any */
+    margin: 0 !important;
+    transform: none !important;
+    border-radius: 4px;
+    box-shadow: none;
+}
+
+.bot-hand-preview .card.mini-card img {
+    width: 100%;
+    height: 100%;
+}

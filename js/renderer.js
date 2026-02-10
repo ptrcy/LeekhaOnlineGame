@@ -116,24 +116,24 @@ export class DOMRenderer extends GameRenderer {
     // Get computed card width from CSS
     const computedStyle = getComputedStyle(document.documentElement);
     const cardWidth = parseFloat(computedStyle.getPropertyValue('--hand-card-width')) || 82;
-    
+
     // Calculate available width inside padding
     // We want to use the actual content box width
     const containerStyle = getComputedStyle(container);
     const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
     const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
-    
+
     // container.clientWidth includes padding but not border/scrollbar
     // So available content width is clientWidth - padding
     const availableWidth = container.clientWidth - paddingLeft - paddingRight;
-    
+
     // Calculate optimal overlap ratio
     // Formula: totalWidth = cardWidth + (cardCount - 1) * cardWidth * (1 - overlapRatio)
     // Solving for overlapRatio: overlapRatio = 1 - (availableWidth - cardWidth) / ((cardCount - 1) * cardWidth)
-    
+
     const minOverlap = 0.15;   // Reduced from 0.4 (15% overlap minimum)
     const maxOverlap = 0.85; // 85% overlap maximum (allows full hand on mobile)
-    
+
     let overlapRatio;
     if (cardCount <= 1) {
       overlapRatio = 0;
@@ -143,14 +143,14 @@ export class DOMRenderer extends GameRenderer {
       // Clamp between min and max
       overlapRatio = Math.max(minOverlap, Math.min(maxOverlap, overlapRatio));
     }
-    
+
     // Calculate the negative margin (overlap in pixels)
     const overlapPx = -(cardWidth * overlapRatio);
-    
+
     // Apply dynamic overlap
     container.style.setProperty('--dynamic-overlap', `${overlapPx}px`);
     container.classList.add('dynamic-overlap');
-    
+
     // Center cards if at minimum overlap - meaning we have extra space
     if (overlapRatio <= minOverlap + 0.01) {
       container.classList.add('centered-cards');
@@ -199,6 +199,9 @@ export class DOMRenderer extends GameRenderer {
     document.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('resize', this.handleResize);
     window.addEventListener('orientationchange', this.handleResize);
+
+    // Setup debug hovers
+    this.setupDebugHovers();
   }
 
   handleResize() {
@@ -578,6 +581,7 @@ export class DOMRenderer extends GameRenderer {
    * @param {boolean} options.force - Force re-render even if hand unchanged
    */
   renderHands(hands, options = {}) {
+    this.allHands = hands; // Store all hands for debug hover
     const humanHand = hands[0];
     const handKey = this.generateHandKey(humanHand);
 
@@ -1027,6 +1031,94 @@ export class HeadlessRenderer extends GameRenderer {
 
   showGameOver(results) {
     // No-op
+  }
+
+  /**
+   * Setup debug hover listeners for bots
+   */
+  setupDebugHovers() {
+    const botIds = [
+      { id: 'player-right', index: 1 },
+      { id: 'player-top', index: 2 },
+      { id: 'player-left', index: 3 }
+    ];
+
+    botIds.forEach(({ id, index }) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('mouseenter', (e) => this.showBotHand(index, el));
+        el.addEventListener('mouseleave', () => this.hideBotHand());
+        // Mobile support (long press? or just tap?) - Tap to toggle maybe?
+        el.addEventListener('click', (e) => {
+          // If already showing this one, hide it. Else show.
+          const existing = document.querySelector('.bot-hand-preview');
+          if (existing && existing.dataset.playerIndex == index) {
+            this.hideBotHand();
+          } else {
+            this.showBotHand(index, el);
+          }
+        });
+      }
+    });
+  }
+
+  showBotHand(playerIndex, targetEl) {
+    this.hideBotHand(); // Clear existing
+
+    if (!this.allHands || !this.allHands[playerIndex]) return;
+
+    const hand = this.allHands[playerIndex];
+    if (hand.length === 0) return;
+
+    // Create container
+    const container = document.createElement('div');
+    container.className = 'bot-hand-preview';
+    container.dataset.playerIndex = playerIndex;
+
+    // Sort hand for display (Suit then Rank)
+    const sortedHand = [...hand].sort((a, b) => {
+      if (a.suit !== b.suit) return SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit);
+      return a.value - b.value;
+    });
+
+    sortedHand.forEach(card => {
+      const cardEl = this.createCardElement(card);
+      cardEl.classList.add('mini-card');
+      container.appendChild(cardEl);
+    });
+
+    document.body.appendChild(container);
+
+    // Position it
+    const rect = targetEl.getBoundingClientRect();
+
+    // Default: Center above the player
+    let top = rect.top - 100;
+    let left = rect.left + (rect.width / 2) - (container.offsetWidth / 2);
+
+    // Adjust based on position class
+    if (targetEl.classList.contains('left')) {
+      top = rect.top + (rect.height / 2) - (container.offsetHeight / 2);
+      left = rect.right + 20;
+    } else if (targetEl.classList.contains('right')) {
+      top = rect.top + (rect.height / 2) - (container.offsetHeight / 2);
+      left = rect.left - container.offsetWidth - 20;
+    } else if (targetEl.classList.contains('top')) {
+      top = rect.bottom + 20;
+    }
+
+    // Keep within viewport
+    if (left < 10) left = 10;
+    if (top < 10) top = 10;
+    if (left + container.offsetWidth > window.innerWidth - 10) left = window.innerWidth - container.offsetWidth - 10;
+
+    container.style.top = `${top}px`;
+    container.style.left = `${left}px`;
+  }
+
+  hideBotHand() {
+    const existing = document.querySelectorAll('.bot-hand-preview');
+    existing.forEach(el => el.remove());
   }
 
   clearTrickPile() {
