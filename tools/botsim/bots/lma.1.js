@@ -317,9 +317,11 @@ const LikhaBot = (() => {
 
     if (following.length > 0) {
       const under = following.filter(c => c.rank < currentHighRank);
-      // Prefer a genuinely safe card to duck with wherever we duck below -
-      // dumping Q♠/10♦ still adds it to the trick's point total, which is
-      // bad whether the eventual winner is our partner or an opponent.
+      // HARD RULE: wherever we duck below the current winner (partner or
+      // opponent, dangerous or clean), always prefer a card that isn't
+      // Q♠/10♦ itself - dumping the penalty card still adds it to the
+      // trick's point total, whoever ends up winning. Only fall back to
+      // Q♠/10♦ when it's the sole card left under the winning rank.
       const safeUnder = under.filter(c => !isLikha(c));
       const duckPool = safeUnder.length > 0 ? safeUnder : under;
 

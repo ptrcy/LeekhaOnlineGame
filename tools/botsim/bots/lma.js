@@ -310,11 +310,14 @@ const LikhaBot = (() => {
       const isDangerous = pointsInTrick > 0 || (leadSuit === 'S' && ctx.qInOpponents) || (leadSuit === 'D' && ctx.tenInOpponents);
 
       // Try to go UNDER
+      // HARD RULE: if we can play a card that does NOT win the trick, we
+      // always do - never voluntarily capture a trick we could have ducked.
+      // Among cards that duck, always prefer one that isn't Q♠/10♦ itself:
+      // shedding the penalty card here still hands it to whoever wins,
+      // whereas a harmless low card costs nothing. Only fall back to
+      // Q♠/10♦ when it's the sole card left under the winning rank.
       const under = following.filter(c => c.rank < currentHighRank);
       if (under.length > 0) {
-        // Prefer a genuinely safe card to duck with. Only shed Q♠/10♦ here
-        // if it's the only card available under the current winning rank -
-        // dumping it blind risks handing it to our own partner.
         const safeUnder = under.filter(c => !isLikha(c));
         const duckPool = safeUnder.length > 0 ? safeUnder : under;
         duckPool.sort(compareRankDesc);
