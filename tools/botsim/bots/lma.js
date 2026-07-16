@@ -312,9 +312,13 @@ const LikhaBot = (() => {
       // Try to go UNDER
       const under = following.filter(c => c.rank < currentHighRank);
       if (under.length > 0) {
-        // Play highest card that is still losing (maximizes value of card we get rid of)
-        under.sort(compareRankDesc);
-        return under[0];
+        // Prefer a genuinely safe card to duck with. Only shed Q♠/10♦ here
+        // if it's the only card available under the current winning rank -
+        // dumping it blind risks handing it to our own partner.
+        const safeUnder = under.filter(c => !isLikha(c));
+        const duckPool = safeUnder.length > 0 ? safeUnder : under;
+        duckPool.sort(compareRankDesc);
+        return duckPool[0];
       }
 
       // Must go OVER (win trick)

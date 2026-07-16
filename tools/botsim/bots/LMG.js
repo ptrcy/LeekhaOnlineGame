@@ -271,16 +271,14 @@ const LikhaBot = (() => {
 
     // --- Subcase 2A: We can play under (Duck) ---
     if (lower.length > 0) {
-      // We want to play the highest card that loses, BUT:
-      // We should avoid playing a valuable "Risky" card if a "Safe" card works just as well.
-      // Example: Trick is King(13). We have Queen(12) and 2.
-      // If we play Queen, we lose the trick (good), but we lose the Queen. 
-      // If Q is Spades, that's GREAT (dumping Q on K).
-      // If Q is Diamonds, that's GREAT (dumping 10-eater on K).
-      
-      // Standard logic: highest card that loses.
-      lower.sort(compareRankAsc);
-      return lower[lower.length - 1];
+      // Prefer a genuinely safe card to duck with. Dumping Q♠/10♦ here is a
+      // gamble - we don't know if the current high card belongs to our
+      // partner, so only shed a Likha card if it's the only option under
+      // the winning rank.
+      const safeLower = lower.filter(c => !isLikha(c));
+      const duckPool = safeLower.length > 0 ? safeLower : lower;
+      duckPool.sort(compareRankAsc);
+      return duckPool[duckPool.length - 1];
     }
 
     // --- Subcase 2B: We MUST play over (Win) ---

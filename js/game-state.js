@@ -9,6 +9,7 @@ import { LMBot as LMXBot } from '../tools/botsim/bots/LMX.js';
 import { LMBot as LMABot } from '../tools/botsim/bots/lma.js';
 import { LMBot as LMX2Bot } from '../tools/botsim/bots/lmx2.js';
 import { LMBot as LMCBot } from '../tools/botsim/bots/lmc.js';
+import { LMBot as LMA1Bot } from '../tools/botsim/bots/lma.1.js';
 import { GameEvents } from './events.js';
 import {
     GAME_RULES,
@@ -143,7 +144,8 @@ export class GameState {
                 'lmx': LMXBot,
                 'lma': LMABot,
                 'lmx2': LMX2Bot,
-                'lmc': LMCBot
+                'lmc': LMCBot,
+                'lma1': LMA1Bot
             };
 
             for (const type of neededTypes) {

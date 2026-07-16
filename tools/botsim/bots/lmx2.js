@@ -357,8 +357,12 @@ const LikhaBot = (() => {
     let chosen;
 
     if (lower.length > 0) {
-      lower.sort(compareRankAsc);
-      chosen = lower[lower.length - 1];
+      // Prefer a genuinely safe card to duck with; only shed Q♠/10♦ if it's
+      // the only card available under the current winning rank.
+      const safeLower = lower.filter(c => !isLikha(c));
+      const duckPool = safeLower.length > 0 ? safeLower : lower;
+      duckPool.sort(compareRankAsc);
+      chosen = duckPool[duckPool.length - 1];
     } else {
       if (trickHasPenalty) {
         const nonLikha = legalCards.filter(c => !isLikha(c));
@@ -516,7 +520,14 @@ export class LMBot {
             }
         }
 
-        const safeCards = flatHand.filter(card => {
+        // Never volunteer to lead Q♠/10♦ - they are the two penalty cards, and
+        // leading them just hands them straight to whoever wins the trick
+        // (often ourselves, if no one can beat a mid-rank card). Only lead one
+        // if it's literally the only card left in hand.
+        const nonLikhaHand = flatHand.filter(c => c !== 'Qs' && c !== 'Td');
+        const leadPool = nonLikhaHand.length > 0 ? nonLikhaHand : flatHand;
+
+        const safeCards = leadPool.filter(card => {
             const idx = getRankIndex(card);
             return idx !== -1 && maxSafeIndex !== -1 && idx <= maxSafeIndex;
         });
@@ -538,7 +549,7 @@ export class LMBot {
             return pickLowest(safeCards);
         }
 
-        return pickLowest(flatHand);
+        return pickLowest(leadPool);
     }
 
     chooseFollow(hand, ctx) {
