@@ -353,9 +353,12 @@ const LikhaBot = (() => {
     const higher = legalCards.filter(c => c.rank > winningRank);
 
     if (lower.length > 0) {
-      // We can lose the trick: play the highest card that still loses
-      lower.sort(compareRankAsc);
-      return lower[lower.length - 1];
+      // We can lose the trick: prefer a genuinely safe card. Only shed
+      // Q♠/10♦ here if it's the only card available under the winning rank.
+      const safeLower = lower.filter(c => !isLikha(c));
+      const duckPool = safeLower.length > 0 ? safeLower : lower;
+      duckPool.sort(compareRankAsc);
+      return duckPool[duckPool.length - 1];
     }
 
     // We cannot play under: anything we play will win the trick.

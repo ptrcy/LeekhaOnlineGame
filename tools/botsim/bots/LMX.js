@@ -44,6 +44,33 @@ const LikhaBot = (() => {
     return cards.reduce((best, c) => (!best || c.rank < best.rank ? c : best), null);
   }
 
+  // ---------- Team / trick analysis helpers ----------
+
+  function isPartner(myIndex, otherIndex) {
+    return (myIndex % 2) === (otherIndex % 2);
+  }
+
+  function findTrickWinner(trick) {
+    const leadSuit = trick[0].card.suit;
+    let winner = trick[0];
+    for (let i = 1; i < trick.length; i++) {
+      if (trick[i].card.suit === leadSuit && trick[i].card.rank > winner.card.rank) {
+        winner = trick[i];
+      }
+    }
+    return winner;
+  }
+
+  function countTrickPoints(trick) {
+    let points = 0;
+    for (const play of trick) {
+      if (isLikhaBlack(play.card)) points += 13;
+      else if (isLikhaRed(play.card)) points += 10;
+      else if (play.card.suit === 'H') points += 1;
+    }
+    return points;
+  }
+
   // ---------- Danger evaluation for passing / discarding ----------
 
   function cardDangerForPass(card, suitCounts) {
@@ -99,8 +126,11 @@ const LikhaBot = (() => {
     const qInHand = hand.some(isLikhaBlack);
     const tenInHand = hand.some(isLikhaRed);
 
-    let qPlayed = false;
-    let tenPlayed = false;
+    // Prefer the tracker-backed flags from the adapter when present - they
+    // stay correct all round, whereas recomputing from `history` only sees
+    // whatever trick data happened to be passed in for this one decision.
+    let qPlayed = typeof state.queenOfSpadesPlayed === 'boolean' ? state.queenOfSpadesPlayed : false;
+    let tenPlayed = typeof state.tenOfDiamondsPlayed === 'boolean' ? state.tenOfDiamondsPlayed : false;
 
     for (const e of history) {
       if (isLikhaBlack(e.card)) qPlayed = true;
@@ -114,6 +144,7 @@ const LikhaBot = (() => {
       tenPlayed,
       qInOpponents: !qInHand && !qPlayed,
       tenInOpponents: !tenInHand && !tenPlayed,
+      playerIndex: state.playerIndex || 0,
     };
   }
 
@@ -283,25 +314,63 @@ const LikhaBot = (() => {
 
   // ---------- Following suit / discarding ----------
 
-  function chooseWhenFollowing(legalCards, trick, fullHand /*, ctx */) {
+  function chooseWhenFollowing(legalCards, trick, fullHand, ctx) {
     const leadSuit = trick[0].card.suit;
-    const trickHasPenalty = trick.some(e => isPenalty(e.card));
+    const myIndex = (ctx && ctx.playerIndex) || 0;
+    const trickPosition = trick.length; // 1=2nd, 2=3rd, 3=last
+    const isLastToPlay = trickPosition === 3;
+
+    const winnerEntry = findTrickWinner(trick);
+    const currentHighRank = winnerEntry.card.rank;
+    const partnerWinning = isPartner(myIndex, winnerEntry.player);
+
+    const pointsInTrick = countTrickPoints(trick);
+    const isDangerous = pointsInTrick > 0 ||
+      (leadSuit === 'S' && ctx && ctx.qInOpponents) ||
+      (leadSuit === 'D' && ctx && ctx.tenInOpponents);
 
     const allLeadSuit = legalCards.every(c => c.suit === leadSuit);
-    if (!allLeadSuit) {
-      const containsLikha = legalCards.some(isLikha);
 
-      if (containsLikha) {
-        const likhas = legalCards.filter(isLikha);
-        const q = likhas.find(isLikhaBlack);
-        if (q) return q;
-        return likhas[0];
+    // --- Void: can't follow suit ---
+    if (!allLeadSuit) {
+      const onlyLikhas = legalCards.every(isLikha);
+      if (onlyLikhas) {
+        if (partnerWinning) {
+          // Must give a likha to partner - minimize: 10♦(10) over Q♠(13)
+          const red = legalCards.find(isLikhaRed);
+          return red || legalCards[0];
+        }
+        // Opponent winning - maximize: Q♠(13) over 10♦(10)
+        const black = legalCards.find(isLikhaBlack);
+        return black || legalCards[0];
       }
 
-      const hearts = legalCards.filter(c => c.suit === 'H');
-      if (hearts.length > 0) {
-        hearts.sort(compareRankDesc);
-        return hearts[0];
+      if (!partnerWinning) {
+        // Opponent winning - dump penalties aggressively
+        const q = legalCards.find(isLikhaBlack);
+        if (q) return q;
+        const ten = legalCards.find(isLikhaRed);
+        if (ten) return ten;
+        const hearts = legalCards.filter(c => c.suit === 'H');
+        if (hearts.length > 0) {
+          hearts.sort(compareRankDesc);
+          return hearts[0];
+        }
+      } else {
+        // Partner winning - protect them from penalties
+        const safe = legalCards.filter(c => !isPenalty(c));
+        if (safe.length > 0) {
+          safe.sort((a, b) => cardDangerForDiscard(b) - cardDangerForDiscard(a));
+          return safe[0];
+        }
+        const hearts = legalCards.filter(c => c.suit === 'H' && !isLikha(c));
+        if (hearts.length > 0) {
+          hearts.sort(compareRankAsc);
+          return hearts[0]; // lowest heart (1 pt)
+        }
+        const red = legalCards.find(isLikhaRed);
+        if (red) return red; // 10♦ = 10 pts < Q♠ = 13 pts
+        return legalCards[0];
       }
 
       const scored = legalCards.map(card => ({
@@ -312,61 +381,60 @@ const LikhaBot = (() => {
       return scored[0].card;
     }
 
-    const winningSoFar = trick
-      .filter(e => e.card.suit === leadSuit)
-      .reduce((best, e) => (best && best.card.rank > e.card.rank ? best : e), null);
-
-    const winningRank = winningSoFar ? winningSoFar.card.rank : -1;
-
-    const lower = legalCards.filter(c => c.rank < winningRank);
-    const higher = legalCards.filter(c => c.rank > winningRank);
-
-    let chosen;
+    // --- Following suit ---
+    const lower = legalCards.filter(c => c.rank < currentHighRank);
+    const higher = legalCards.filter(c => c.rank > currentHighRank);
 
     if (lower.length > 0) {
-      lower.sort(compareRankAsc);
-      chosen = lower[lower.length - 1];
-    } else {
-      if (trickHasPenalty) {
-        const nonLikha = legalCards.filter(c => !isLikha(c));
-        if (nonLikha.length > 0) {
-          nonLikha.sort(compareRankAsc);
-          chosen = nonLikha[0];
-        } else {
-          const likhas = legalCards.filter(isLikha);
-          likhas.sort(compareRankAsc);
-          chosen = likhas[0];
-        }
-      } else {
-        const winningCandidates = higher;
-        const nonLikhaWinners = winningCandidates.filter(c => !isLikha(c));
-        if (nonLikhaWinners.length > 0) {
-          nonLikhaWinners.sort(compareRankAsc);
-          chosen = nonLikhaWinners[0];
-        } else {
-          winningCandidates.sort(compareRankAsc);
-          chosen = winningCandidates[0];
-        }
-      }
+      // Prefer a genuinely safe card to duck with; only shed Q♠/10♦ if it's
+      // the only card available under the current winning rank - dumping it
+      // still adds it to the trick's point total, whoever ends up winning.
+      const safeLower = lower.filter(c => !isLikha(c));
+      const duckPool = safeLower.length > 0 ? safeLower : lower;
+      duckPool.sort(compareRankAsc);
+      return duckPool[duckPool.length - 1];
     }
 
-    if ((leadSuit === 'S' || leadSuit === 'D') && chosen && chosen.rank > 9) {
-      const allowedCandidates = legalCards.filter(c =>
-        c.rank <= 9 || (c.rank > 9 && c.rank < winningRank)
-      );
-
-      if (allowedCandidates.length > 0) {
-        const lowerAllowed = allowedCandidates.filter(c => c.rank < winningRank);
-        if (lowerAllowed.length > 0) {
-          lowerAllowed.sort(compareRankAsc);
-          return lowerAllowed[lowerAllowed.length - 1];
-        }
-        allowedCandidates.sort(compareRankAsc);
-        return allowedCandidates[0];
+    // Must go over (win the trick)
+    if (partnerWinning && !isDangerous) {
+      // Clean trick, forced to overtake our own partner - safe to burn a
+      // high card since nothing is at stake.
+      const safeOver = higher.filter(c => !isLikha(c));
+      if (safeOver.length > 0) {
+        safeOver.sort(compareRankDesc);
+        return safeOver[0];
       }
+      higher.sort(compareRankAsc);
+      return higher[0];
     }
 
-    return chosen;
+    if (isDangerous) {
+      const nonLikha = higher.filter(c => !isLikha(c));
+      if (nonLikha.length > 0) {
+        nonLikha.sort(compareRankAsc);
+        return nonLikha[0];
+      }
+      higher.sort(compareRankAsc);
+      return higher[0];
+    }
+
+    if (isLastToPlay) {
+      const safeToBurn = higher.filter(c => !isLikha(c));
+      if (safeToBurn.length > 0) {
+        safeToBurn.sort(compareRankDesc);
+        return safeToBurn[0];
+      }
+      higher.sort(compareRankAsc);
+      return higher[0];
+    }
+
+    const nonLikhaWinners = higher.filter(c => !isLikha(c));
+    if (nonLikhaWinners.length > 0) {
+      nonLikhaWinners.sort(compareRankAsc);
+      return nonLikhaWinners[0];
+    }
+    higher.sort(compareRankAsc);
+    return higher[0];
   }
 
   // ---------- Main playCard entry ----------
@@ -483,7 +551,14 @@ export class LMBot {
             }
         }
 
-        const safeCards = flatHand.filter(card => {
+        // Never volunteer to lead Q♠/10♦ - they are the two penalty cards, and
+        // leading them just hands them straight to whoever wins the trick
+        // (often ourselves, if no one can beat a mid-rank card). Only lead one
+        // if it's literally the only card left in hand.
+        const nonLikhaHand = flatHand.filter(c => c !== 'Qs' && c !== 'Td');
+        const leadPool = nonLikhaHand.length > 0 ? nonLikhaHand : flatHand;
+
+        const safeCards = leadPool.filter(card => {
             const idx = getRankIndex(card);
             return idx !== -1 && maxSafeIndex !== -1 && idx <= maxSafeIndex;
         });
@@ -505,7 +580,7 @@ export class LMBot {
             return pickLowest(safeCards);
         }
 
-        return pickLowest(flatHand);
+        return pickLowest(leadPool);
     }
 
     chooseFollow(hand, ctx) {
@@ -523,7 +598,9 @@ export class LMBot {
             hand: lmHand,
             scores: ctx.scores || [0, 0, 0, 0],
             trick: lmTrick,
-            playerIndex: ctx.playerIndex || 0
+            playerIndex: ctx.playerIndex || 0,
+            queenOfSpadesPlayed: ctx.queenOfSpadesPlayed,
+            tenOfDiamondsPlayed: ctx.tenOfDiamondsPlayed
         };
         const chosen = LikhaBot.playCard(state);
         return this.#fromLMCard(chosen);

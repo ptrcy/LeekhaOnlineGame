@@ -14,6 +14,7 @@ const LikhaBot = (() => {
   }
 
   function isPenalty(card) {
+    // Penalties: all hearts, Q♠, 10♦
     return card.suit === 'H' || isLikha(card);
   }
 
@@ -33,6 +34,14 @@ const LikhaBot = (() => {
     const counts = { C: 0, D: 0, H: 0, S: 0 };
     cards.forEach(c => { counts[c.suit]++; });
     return counts;
+  }
+
+  function highestByRank(cards) {
+    return cards.reduce((best, c) => (!best || c.rank > best.rank ? c : best), null);
+  }
+
+  function lowestByRank(cards) {
+    return cards.reduce((best, c) => (!best || c.rank < best.rank ? c : best), null);
   }
 
   // ---------- Team / trick analysis helpers ----------
@@ -70,7 +79,7 @@ const LikhaBot = (() => {
     if (isLikhaRed(card)) return 900;
 
     if (card.suit === 'H') {
-      if (card.rank >= 13) return 800;
+      if (card.rank >= 13) return 800; // Ace, King
       return 500 + card.rank;
     }
 
@@ -78,7 +87,7 @@ const LikhaBot = (() => {
       return 300 + card.rank;
     }
 
-    if (card.suit === 'S' && card.rank >= 13) return 400;
+    if (card.suit === 'S' && card.rank >= 13) return 400; // A♠, K♠
 
     return card.rank;
   }
@@ -89,6 +98,8 @@ const LikhaBot = (() => {
     if (card.suit === 'H') return 500 + card.rank;
 
     let danger = card.rank;
+
+    // NEW: Stronger penalty for high spades / diamonds kept into later tricks
     if (card.suit === 'S' && card.rank >= 11) danger += 30;
     if (card.suit === 'D' && card.rank >= 11) danger += 25;
     if (card.suit === 'D' && card.rank >= 8) danger += 15;
@@ -101,33 +112,130 @@ const LikhaBot = (() => {
   function buildLikhaContext(state) {
     const ctx = state.context || {};
     const remaining = ctx.remaining || [13, 13, 13, 13];
-
     const hand = state.hand || [];
+
+    // Played cards specifically (for counting)
+    // ctx.playedCards = {'H': [ranks...], 'S': [], ...}
+    const playedCards = ctx.playedCards || { 'H': [], 'S': [], 'D': [], 'C': [] };
+
     const qInHand = hand.some(isLikhaBlack);
     const tenInHand = hand.some(isLikhaRed);
-
     const qPlayed = ctx.queenOfSpadesPlayed || false;
-    const tenPlayed = ctx.tenOfDiamondsPlayed || false;
     const qInOpponents = !qInHand && !qPlayed;
+    const tenPlayed = ctx.tenOfDiamondsPlayed || false;
     const tenInOpponents = !tenInHand && !tenPlayed;
 
+    // Determine if it's "Endgame" (< 5 cards left per player)
+    // Total Remaining = sum(remaining)
+    // Actually remaining is cards unplayed in whole game.
+    // If remaining total < 20? 4 players * 5 cards = 20.
+    const totalRemaining = remaining.reduce((a, b) => a + b, 0);
+    const isEndgame = totalRemaining <= 16; // Last 4 tricks
+
     return {
-      qInHand,
-      tenInHand,
-      qPlayed,
-      tenPlayed,
-      qInOpponents,
-      tenInOpponents,
-      remaining,
+      qInHand, tenInHand, qPlayed, tenPlayed, qInOpponents, tenInOpponents,
+      remaining, playedCards, isEndgame,
       playerIndex: ctx.playerIndex || 0,
       scores: ctx.scores || [0, 0, 0, 0],
       hasPlayers: ctx.hasPlayers || [[], [], [], []],
       heartsBroken: ctx.heartsBroken || false,
-      trickType: ctx.trickType || 0
+      trickType: ctx.trickType || 0,
+
+      // Helpers for checking if a card is "Boss" (highest remaining in suit)
+      isBoss: (card) => {
+        const suit = card.suit;
+        const rank = card.rank;
+        const played = playedCards[suit] || [];
+        // Check if any unplayed card is higher than this card
+        // We know our hand. We need to check if Opponents have higher.
+        // Unplayed = AllCards - Played - MyHand
+        // If any Unplayed > rank, then not Boss.
+
+        // Iterate ranks > card.rank up to 14
+        for (let r = rank + 1; r <= 14; r++) {
+          // If r is NOT in played, AND NOT in my hand, then someone else has it.
+          if (!played.includes(r)) {
+            // Check if it's in my hand?
+            const inMyHand = hand.some(c => c.suit === suit && c.rank === r);
+            if (!inMyHand) return false; // Opponent has a higher card
+          }
+        }
+        return true; // No higher cards out there
+      }
     };
   }
 
-  // Danger of leading a given card
+  // ---------- Passing Logic (Smart Voiding) ----------
+
+  function passCards(state) {
+    const hand = cloneCards(state.hand);
+    const suitCounts = countSuits(hand);
+    const hasQ = hand.some(isLikhaBlack);
+
+    // Identify suits we can VOID (length <= 3)
+    // Prioritize voiding:
+    // 1. Clubs (useless, good to void to ruff)
+    // 2. Diamonds (if we don't have 10D, distinct advantage)
+    // 3. Spades (Dangerous if we have Q, but if we pass Q, we want to void Spades!)
+
+    // Cards to always pass if possible
+    const forcePass = hand.filter(c => isLikha(c));
+
+    // If we have > 3 cards to pass in forcePass (impossible, max 2 likhas + maybe hearts),
+    // we pick top 3 danger.
+
+    // Helper to score a set of 3 cards
+    // This is a bit complex for JS, let's stick to heuristic scoring with "Void Bonus".
+
+    const scored = hand.map(card => {
+      let danger = cardDangerForPass(card, suitCounts);
+
+      // VOID BONUS
+      // If this suit has <= 3 cards, and we pass ALL of them, massive bonus.
+      // But we can only pass 3 cards total.
+      // So we can only void a suit if length <= 3 (and possibly others).
+      // For now, let's just boost cards in short suits.
+
+      const count = suitCounts[card.suit];
+      if (count > 0 && count <= 3) {
+        // Can we void it?
+        if (isLikhaBlack(card) && count > 1) {
+          // Keeping Q involves keeping guards usually.
+          // Whatever, cardDanger handles Q high score.
+        } else {
+          // Boost based on how short it is
+          // Length 1: Easy void (danger + 200)
+          // Length 2: Doable (danger + 100)
+          // Length 3: Harder (danger + 50)
+          let bonus = 0;
+          if (count === 1) bonus = 500; // Almost guaranteed pass
+          else if (count === 2) bonus = 70;
+          else if (count === 3) bonus = 40;
+
+          // However, avoid voiding Spades if we are KEEPING Q (not passing it).
+          if (card.suit === 'S' && hasQ && !isLikhaBlack(card)) {
+            // We have Q, and this is a guard.
+            // If we are passing Q, we want to void S.
+            // If we are keeping Q, we want to KEEP S.
+            // cardDanger already gives guards low danger?
+            // Actually cardDanger returns rank. Low guards = low danger.
+            // We want to make sure we don't accidentally pass guards if we keep Q.
+            // If Q is score 1000, it will be passed.
+            // So we assume Q is passed if present.
+          } else {
+            danger += bonus;
+          }
+        }
+      }
+      return { card, danger };
+    });
+
+    scored.sort((a, b) => b.danger - a.danger);
+    return scored.slice(0, 3).map(s => s.card);
+  }
+
+  // ---------- Lead Logic (Exit Strategy & Protection) ----------
+
   function leadCardDanger(card, fullHand, ctx) {
     if (isLikha(card)) return 10000;
     if (card.suit === 'H' && !ctx.heartsBroken) return 5000;
@@ -135,130 +243,56 @@ const LikhaBot = (() => {
     let danger = 0;
     const suit = card.suit;
 
+    // Protective Leading
+    // If I have Q♠, leading Spades is risky.
+    if (ctx.qInHand && suit === 'S') danger += 200;
+    // If I have 10♦, leading Diamonds is risky.
+    if (ctx.tenInHand && suit === 'D') danger += 150;
+
+    // Avoid leading high Diamonds if 10D is out (risk of eating it)
+    // Also encourage bleeding low Diamonds to force 10D out.
+    if (suit === 'D' && ctx.tenInOpponents) {
+      if (card.rank >= 11) danger += 1500; // J, Q, K, A
+      else danger -= 200; // Flush logic (safe leads)
+    }
+
+    // Voids Check
     const suitIdx = { 'H': 0, 'S': 1, 'D': 2, 'C': 3 }[suit];
     const playersWithSuit = ctx.hasPlayers[suitIdx];
-
     let opponentsVoid = 0;
     if (!playersWithSuit.includes(1)) opponentsVoid++;
     if (!playersWithSuit.includes(3)) opponentsVoid++;
+    if (opponentsVoid > 0) danger += 100 * opponentsVoid;
 
-    if (opponentsVoid > 0) {
-      danger += 50 * opponentsVoid;
+    // Avoid leading high Spades if Q is out (risk of eating it)
+    // Also encourage bleeding low Spades to force Q out.
+    if (suit === 'S' && ctx.qInOpponents) {
+      if (card.rank >= 13) danger += 2000; // K, A
+      else danger -= 200; // Flush logic (safe leads)
     }
 
-    if (suit === 'S') {
-      if (ctx.qInOpponents) {
-        if (card.rank >= 12) danger += 2000;
-        else danger -= 200; // Low spade lead to flush Q♠
-      } else if (ctx.qInHand) {
-        danger += 100;
-      }
-    }
+    if (card.rank >= 13) danger += 100;
 
-    if (suit === 'D') {
-      if (ctx.tenInOpponents) {
-        if (card.rank > 10) danger += 500;
-        else danger -= 50;
-      }
-    }
-
-    const myCount = countSuits(fullHand)[suit];
-    danger -= myCount * 10;
+    // Prefer lower ranks
     danger += card.rank;
+
+    // Long suit preference
+    const myCount = countSuits(fullHand)[suit];
+    danger -= myCount * 15;
 
     return danger;
   }
-
-  // ---------- Legal plays ----------
-
-  function computeLegalPlays(hand, trick) {
-    if (!trick || trick.length === 0) {
-      return cloneCards(hand);
-    }
-
-    const leadSuit = trick[0].card.suit;
-    const followSuitCards = hand.filter(c => c.suit === leadSuit);
-
-    if (followSuitCards.length > 0) {
-      return followSuitCards;
-    }
-
-    const likhas = hand.filter(isLikha);
-    if (likhas.length > 0) {
-      return likhas;
-    }
-
-    return cloneCards(hand);
-  }
-
-  // ---------- Passing 3 cards ----------
-
-  function passCards(state) {
-    const hand = cloneCards(state.hand);
-    const suitCounts = countSuits(hand);
-
-    const scored = hand.map(card => ({
-      card,
-      danger: cardDangerForPass(card, suitCounts)
-    }));
-
-    const suits = ['C', 'D', 'H', 'S'];
-    const hasQ = hand.some(isLikhaBlack);
-
-    for (const s of suits) {
-      const count = suitCounts[s];
-      if (count > 0 && count <= 2) {
-        if (s === 'S' && hasQ && count > 1) continue;
-
-        scored.forEach(item => {
-          if (item.card.suit === s) item.danger += 50;
-        });
-      }
-    }
-
-    scored.sort((a, b) => b.danger - a.danger);
-    return scored.slice(0, 3).map(s => s.card);
-  }
-
-  // ---------- Trick inference helper ----------
-
-  function inferCurrentTrick(state) {
-    if (Array.isArray(state.trick)) {
-      return cloneTrick(state.trick);
-    }
-
-    const history = state.playedCards || [];
-    const n = history.length;
-    const cardsThisTrick = n % 4;
-
-    if (cardsThisTrick === 0) {
-      return [];
-    }
-    const start = n - cardsThisTrick;
-    return cloneTrick(history.slice(start));
-  }
-
-  function cloneTrick(trick) {
-    return trick.map(entry => ({
-      player: entry.player,
-      card: { suit: entry.card.suit, rank: entry.card.rank },
-    }));
-  }
-
-  // ---------- Lead selection ----------
 
   function chooseLead(legalCards, fullHand, ctx) {
     const candidates = legalCards.map(card => ({
       card,
       score: leadCardDanger(card, fullHand, ctx)
     }));
-
     candidates.sort((a, b) => a.score - b.score);
-    return candidates[0].card;
+    return candidates[0].card; // Min danger
   }
 
-  // ---------- Following suit / discarding ----------
-  // Enhanced with: team awareness, positional awareness, correct points calc
+  // ---------- Following Logic (with team & positional awareness) ----------
 
   function chooseWhenFollowing(legalCards, trick, fullHand, ctx) {
     const leadSuit = trick[0].card.suit;
@@ -266,12 +300,12 @@ const LikhaBot = (() => {
     const trickPosition = trick.length; // 1=2nd, 2=3rd, 3=last
     const isLastToPlay = trickPosition === 3;
 
-    // Find who is currently winning the trick
+    // Who is currently winning?
     const winnerEntry = findTrickWinner(trick);
     const currentHighRank = winnerEntry.card.rank;
     const partnerWinning = isPartner(myIndex, winnerEntry.player);
 
-    // Accurate trick points (no card.points dependency)
+    // Accurate trick points
     const pointsInTrick = countTrickPoints(trick);
 
     const isDangerous = pointsInTrick > 0 ||
@@ -292,12 +326,12 @@ const LikhaBot = (() => {
       // ~~~ Partner winning ~~~
       if (partnerWinning) {
         if (!isDangerous) {
-          // Clean trick, partner winning — safe to shed high cards
+          // Clean trick, partner winning - shed high cards safely
           if (duckPool.length > 0) {
             duckPool.sort(compareRankDesc);
-            return duckPool[0]; // highest losing card
+            return duckPool[0];
           }
-          // Must overtake partner on a clean trick — burn high non-likha
+          // Must overtake partner on clean trick - burn high non-likha
           const safeOver = following.filter(c => c.rank > currentHighRank && !isLikha(c));
           if (safeOver.length > 0) {
             safeOver.sort(compareRankDesc);
@@ -306,12 +340,12 @@ const LikhaBot = (() => {
           following.sort(compareRankAsc);
           return following[0];
         } else {
-          // Dangerous trick, partner winning — duck to let partner hold it
+          // Dangerous trick, partner winning - duck to let partner hold it
           if (duckPool.length > 0) {
             duckPool.sort(compareRankDesc);
             return duckPool[0];
           }
-          // Must overtake partner — play lowest non-likha to minimize damage
+          // Must overtake partner - play lowest non-likha
           const nonLikha = following.filter(c => !isLikha(c));
           if (nonLikha.length > 0) {
             nonLikha.sort(compareRankAsc);
@@ -324,14 +358,14 @@ const LikhaBot = (() => {
 
       // ~~~ Opponent winning ~~~
       if (duckPool.length > 0) {
-        // Can duck — play highest losing card
+        // Can duck - play highest losing card
         duckPool.sort(compareRankDesc);
         return duckPool[0];
       }
 
       // Must go over (win the trick)
       if (isDangerous) {
-        // Dangerous — play lowest non-likha winner to limit exposure
+        // Play lowest non-likha winner
         const nonLikha = following.filter(c => !isLikha(c));
         if (nonLikha.length > 0) {
           nonLikha.sort(compareRankAsc);
@@ -343,7 +377,7 @@ const LikhaBot = (() => {
 
       // Clean trick, forced to win
       if (isLastToPlay) {
-        // Last to play — no one can dump on us, safe to burn high cards
+        // Last to play - no one can dump on us, safe to burn high cards
         const safeToBurn = following.filter(c => !isLikha(c));
         if (safeToBurn.length > 0) {
           safeToBurn.sort(compareRankDesc);
@@ -353,7 +387,7 @@ const LikhaBot = (() => {
         return following[0];
       }
 
-      // Not last — cautious win (someone may still dump penalties on us)
+      // Not last - cautious win (someone may still dump penalties)
       const nonLikhaWinners = following.filter(c => c.rank > currentHighRank && !isLikha(c));
       if (nonLikhaWinners.length > 0) {
         nonLikhaWinners.sort(compareRankAsc);
@@ -363,24 +397,24 @@ const LikhaBot = (() => {
       return following[0];
     }
 
-    // --- 2. Void — discard logic ---
+    // --- 2. Void - discard logic with team awareness ---
 
-    // Forced leekha (only likha cards in legal set)
+    // If only likha cards in legal set
     const onlyLikhas = legalCards.every(isLikha);
     if (onlyLikhas) {
       if (partnerWinning) {
-        // Must give likha to partner — minimize: 10♦(10) over Q♠(13)
+        // Must give likha to partner - minimize: 10D(10) over QS(13)
         const red = legalCards.find(isLikhaRed);
         return red || legalCards[0];
       } else {
-        // Opponent winning — maximize: Q♠(13) over 10♦(10)
+        // Opponent winning - maximize: QS(13) over 10D(10)
         const black = legalCards.find(isLikhaBlack);
         return black || legalCards[0];
       }
     }
 
     if (!partnerWinning) {
-      // Opponent winning — dump penalties aggressively
+      // Opponent winning - dump penalties aggressively
       const q = legalCards.find(isLikhaBlack);
       if (q) return q;
 
@@ -393,21 +427,21 @@ const LikhaBot = (() => {
         return hearts[0];
       }
     } else {
-      // Partner winning — protect them from penalties
+      // Partner winning - protect them from penalties
       const safe = legalCards.filter(c => !isPenalty(c));
       if (safe.length > 0) {
         safe.sort((a, b) => cardDangerForDiscard(b) - cardDangerForDiscard(a));
         return safe[0];
       }
-      // Only penalties left — dump lowest value on partner
+      // Only penalties left - dump lowest value on partner
       const hearts = legalCards.filter(c => c.suit === 'H' && !isLikha(c));
       if (hearts.length > 0) {
         hearts.sort(compareRankAsc);
         return hearts[0]; // lowest heart (1 pt)
       }
-      // Must dump likha on partner — minimize damage
+      // Must dump likha on partner - minimize damage
       const red = legalCards.find(isLikhaRed);
-      if (red) return red; // 10♦ = 10 pts < Q♠ = 13 pts
+      if (red) return red; // 10D = 10 pts < QS = 13 pts
       return legalCards[0];
     }
 
@@ -425,7 +459,11 @@ const LikhaBot = (() => {
 
   function playCard(state) {
     const fullHand = cloneCards(state.hand);
+
+    // Context from BotAdapter
     const ctx = buildLikhaContext(state);
+
+    // Legal moved (handled by BotAdapter usually, but good to filter)
     const trick = state.trick || [];
     let legalCards = fullHand;
 
@@ -434,10 +472,12 @@ const LikhaBot = (() => {
       const following = fullHand.filter(c => c.suit === leadSuit);
       if (following.length > 0) legalCards = following;
       else {
+        // Void. Check Forced Leekha?
         const penalties = fullHand.filter(isLikha);
         if (penalties.length > 0) legalCards = penalties;
       }
     } else {
+      // Leading
       if (!ctx.heartsBroken) {
         const nonHearts = fullHand.filter(c => c.suit !== 'H');
         if (nonHearts.length > 0) legalCards = nonHearts;
@@ -453,6 +493,7 @@ const LikhaBot = (() => {
       chosen = chooseWhenFollowing(legalCards, trick, fullHand, ctx);
     }
 
+    console.log(`[LMA] Chosen: ${chosen.rank}${chosen.suit}`);
     return chosen;
   }
 
@@ -524,11 +565,13 @@ export class LMBot {
 
   chooseLead(hand, ctx) {
     const lmHand = this.#flattenHand(hand);
+
     const state = {
       hand: lmHand,
       trick: [],
       context: ctx
     };
+
     const chosen = LikhaBot.playCard(state);
     return this.#fromLMCard(chosen);
   }
@@ -536,6 +579,7 @@ export class LMBot {
   chooseFollow(hand, ctx) {
     const lmHand = this.#flattenHand(hand);
     const lmTrick = this.#projectTrickToLikha(ctx.trick);
+
     const state = {
       hand: lmHand,
       trick: lmTrick,
