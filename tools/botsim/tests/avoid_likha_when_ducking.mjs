@@ -10,6 +10,7 @@ import { LMBot as LMX2Bot } from '../bots/lmx2.js';
 import { LMBot as LMCBot } from '../bots/lmc.js';
 import { LMBot as LMABot } from '../bots/lma.js';
 import { LMBot as LMA1Bot } from '../bots/lma.1.js';
+import { LMBot as LMTSBot } from '../bots/lmts.js';
 
 const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
 const BOTS = [
@@ -20,6 +21,7 @@ const BOTS = [
   ['lmc', LMCBot],
   ['lma', LMABot],
   ['lma1', LMA1Bot],
+  ['lmts', LMTSBot],
 ];
 
 let failures = 0;

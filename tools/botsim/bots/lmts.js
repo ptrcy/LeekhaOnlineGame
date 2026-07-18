@@ -213,8 +213,12 @@ function chooseFreeDiscard(options, hand, trick, botSeat) {
 }
 
 function chooseLead(hand) {
+    // Hard rule: Never lead Queen of Spades or 10 of Diamonds unless they are the only cards left
+    const nonLikhaCards = hand.filter(c => !isLikha(c));
+    const poolCards = nonLikhaCards.length > 0 ? nonLikhaCards : hand;
+
     const bySuit = new Map();
-    for (const card of hand) {
+    for (const card of poolCards) {
         const list = bySuit.get(card.suit) ?? [];
         list.push(card);
         bySuit.set(card.suit, list);
