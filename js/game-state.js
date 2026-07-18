@@ -307,15 +307,13 @@ export class GameState {
             message: "Game On!"
         });
 
-        // Determine leader: First round is random, subsequent rounds use dealer rule
-        let leader;
+        // Determine leader: the player who captured the Queen of Spades in the previous round starts.
+        // For the first round, we start with the randomly selected dealer.
+        let leader = this.dealerIndex;
         if (this.roundNumber === 1) {
-            // First round: random leader
-            leader = Math.floor(Math.random() * 4);
-            console.log(`[DEBUG] Round 1: Random leader selected = Player ${leader} (${this.players[leader].name})`);
+            console.log(`[DEBUG] Round 1: Random dealer selected as starting leader = Player ${leader} (${this.players[leader].name})`);
         } else {
-            // Subsequent rounds: Player to Right of Dealer leads first
-            leader = (this.dealerIndex + 1) % 4;
+            console.log(`[DEBUG] Round ${this.roundNumber}: Player who captured the Queen of Spades starts = Player ${leader} (${this.players[leader].name})`);
         }
 
         for (let trickNum = 0; trickNum < 13; trickNum++) {

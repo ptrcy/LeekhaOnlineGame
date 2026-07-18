@@ -74,6 +74,5 @@ All UI updates flow through `GameEventEmitter` (`js/events.js`), a plain pub/sub
 - 4 players, 2 fixed teams (P0+P2 vs P1+P3), 13 cards each, 3 cards passed left before each round (`GAME_RULES` in `js/constants.js`).
 - **Forced Leekha** (`getValidMoves`): if a player is void in the led suit but holds Q♠ or 10♦, they *must* play one of those — this is the rule the game is named after.
 - Q♠ = 13 points, 10♦ = 10 points, each Heart = 1 point; first to `SCORE_LIMIT` (101) loses.
-- Round 1 leader is random; subsequent rounds are led by the player to the right of the dealer.
-- The dealer seat passes to whoever captured the trick containing Q♠ that round (`queenOfSpadesCapturedBy` in `GameState.endRound`), not a fixed rotation.
+- Round 1 starting leader is the randomly selected dealer; subsequent rounds are led by the player who captured the Queen of Spades in the previous round (who also becomes the new dealer).
 - `CardTracker` (`js/card-tracker.js`) tracks played cards, discovered suit-voids per player, and hearts-broken/Q♠-played/10♦-played flags — this is the primary signal bots use to infer opponents' hands.
