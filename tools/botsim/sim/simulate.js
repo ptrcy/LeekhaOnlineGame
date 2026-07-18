@@ -2,7 +2,7 @@ import { GameState } from '../../../js/game-state.js';
 import { BotPlayer } from '../../../js/player.js';
 import { GameEventEmitter } from '../../../js/events.js';
 
-const BOT_TYPES = ['lmg', 'lmlm', 'lmx', 'lmx2', 'lmc', 'lma1'];
+const BOT_TYPES = ['lmg', 'lmlm', 'lmx', 'lmx2', 'lmc', 'lma1', 'lmts'];
 
 async function runMatchup(team0Bot, team1Bot, simGames, verbose = true) {
     const t0 = team0Bot.toLowerCase();
@@ -25,25 +25,27 @@ async function runMatchup(team0Bot, team1Bot, simGames, verbose = true) {
 
     game.players = players;
 
-    game.simulation = {
-        enabled: true,
-        target: simGames,
-        completed: 0,
-        wins: {}
-    };
+    return new Promise(async (resolve) => {
+        game.simulation = {
+            enabled: true,
+            target: simGames,
+            completed: 0,
+            wins: {},
+            onComplete: () => {
+                const team0Wins = game.simulation.wins[t0] || 0;
+                const team1Wins = game.simulation.wins[t1] || 0;
+                resolve({ team0Bot: t0, team1Bot: t1, team0Wins, team1Wins });
+            }
+        };
 
-    try {
-        await game.initializeBots({ 0: t0, 2: t0, 1: t1, 3: t1 });
-        game.startNewGame();
-    } catch (error) {
-        console.error("Simulation failed to start:", error);
-        return { team0Bot: t0, team1Bot: t1, team0Wins: 0, team1Wins: 0 };
-    }
-
-    const team0Wins = game.simulation.wins[t0] || 0;
-    const team1Wins = game.simulation.wins[t1] || 0;
-
-    return { team0Bot: t0, team1Bot: t1, team0Wins, team1Wins };
+        try {
+            await game.initializeBots({ 0: t0, 2: t0, 1: t1, 3: t1 });
+            game.startNewGame();
+        } catch (error) {
+            console.error("Simulation failed to start:", error);
+            resolve({ team0Bot: t0, team1Bot: t1, team0Wins: 0, team1Wins: 0 });
+        }
+    });
 }
 
 async function runSingle(args) {

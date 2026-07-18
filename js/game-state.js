@@ -10,6 +10,7 @@ import { LMBot as LMABot } from '../tools/botsim/bots/lma.js';
 import { LMBot as LMX2Bot } from '../tools/botsim/bots/lmx2.js';
 import { LMBot as LMCBot } from '../tools/botsim/bots/lmc.js';
 import { LMBot as LMA1Bot } from '../tools/botsim/bots/lma.1.js';
+import { LMBot as LMTSBot } from '../tools/botsim/bots/lmts.js';
 import { GameEvents } from './events.js';
 import {
     GAME_RULES,
@@ -145,7 +146,8 @@ export class GameState {
                 'lma': LMABot,
                 'lmx2': LMX2Bot,
                 'lmc': LMCBot,
-                'lma1': LMA1Bot
+                'lma1': LMA1Bot,
+                'lmts': LMTSBot
             };
 
             for (const type of neededTypes) {
@@ -605,6 +607,9 @@ export class GameState {
                 const t1 = this.simulation.team1;
                 const finalSummary = `Simulation complete. ${t0}: ${this.simulation.wins[t0]}, ${t1}: ${this.simulation.wins[t1]}`;
                 console.log(finalSummary);
+                if (typeof this.simulation.onComplete === 'function') {
+                    this.simulation.onComplete();
+                }
                 return; // Stop
             }
 

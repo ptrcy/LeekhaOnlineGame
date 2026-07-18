@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Initialize AI bots from URL params or default
         const urlParams = new URLSearchParams(window.location.search);
         const botParam = urlParams.get('bots');
-        let botAssignments = { 1: 'lma1', 2: 'lma1', 3: 'lma1' }; // Default (strongest bot per tools/botsim/sim/simulate.js matrix)
+        let botAssignments = { 1: 'lmts', 2: 'lmts', 3: 'lmts' }; // Default (strongest bot per tools/botsim/sim/simulate.js matrix)
         if (botParam) {
             const botTypes = botParam.split(',');
             if (botTypes.length === 3) {
